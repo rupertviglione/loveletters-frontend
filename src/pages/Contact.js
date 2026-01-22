@@ -65,7 +65,7 @@ const Contact = () => {
             className="relative"
             style={{ 
               marginTop: '-15%', 
-              marginBottom: '-35%',
+              marginBottom: '-35%'
               marginLeft: '-10%',
               marginRight: '-10%'
             }}
@@ -81,10 +81,10 @@ const Contact = () => {
               onSubmit={handleSubmit} 
               className="absolute flex flex-col justify-between"
               style={{
-                top: '28%',
-                bottom: '54%',
-                left: '33%',
-                right: '33%',
+                top: '23%',
+                bottom: '50%',
+                left: '30%',
+                right: '30%',
                 padding: '1.5%'
               }}
               data-testid="contact-form"
