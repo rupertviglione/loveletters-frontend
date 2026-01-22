@@ -46,9 +46,9 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-16 md:pt-24 bg-background" data-testid="contact-page">
-      <div className="py-3 md:py-6 px-4 md:px-8">
-        <h1 className="font-courier font-bold text-2xl md:text-4xl lg:text-5xl uppercase tracking-tight leading-none">
+    <div className="min-h-screen pt-16 md:pt-20 bg-background" data-testid="contact-page">
+      <div className="py-2 md:py-4 px-4 md:px-8">
+        <h1 className="font-courier font-bold text-2xl md:text-4xl uppercase tracking-tight leading-none">
           {t('Contacto', 'Contact')}
         </h1>
       </div>
@@ -57,12 +57,19 @@ const Contact = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="px-2 md:px-4"
       >
-        {/* Typewriter container - crops black space */}
-        <div className="relative w-full max-w-4xl mx-auto overflow-hidden" style={{ maxHeight: '70vh' }}>
-          {/* Image with negative margins to crop black space */}
-          <div className="relative" style={{ marginTop: '-8%', marginBottom: '-20%' }}>
+        {/* Typewriter container - aggressive crop of black space */}
+        <div className="relative w-full overflow-hidden">
+          {/* Negative margins to crop black space aggressively */}
+          <div 
+            className="relative"
+            style={{ 
+              marginTop: '-15%', 
+              marginBottom: '-35%',
+              marginLeft: '-10%',
+              marginRight: '-10%'
+            }}
+          >
             <img
               src="/img/contacto.png"
               alt="Typewriter"
@@ -70,16 +77,15 @@ const Contact = () => {
             />
             
             {/* Form positioned exactly on the paper */}
-            {/* Paper: top 25%, bottom 47%, left 30%, right 30% */}
             <form 
               onSubmit={handleSubmit} 
               className="absolute flex flex-col justify-between"
               style={{
-                top: '27%',
-                bottom: '55%',
-                left: '32%',
-                right: '32%',
-                padding: '2%'
+                top: '28%',
+                bottom: '54%',
+                left: '33%',
+                right: '33%',
+                padding: '1.5%'
               }}
               data-testid="contact-form"
             >
@@ -88,8 +94,8 @@ const Contact = () => {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-transparent border-0 border-b border-black/25 focus:border-black/50 focus:outline-none font-mono placeholder:text-black/40 text-black"
-                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0' }}
+                className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
                 placeholder={t('Nome', 'Name')}
                 data-testid="contact-name"
               />
@@ -99,8 +105,8 @@ const Contact = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-transparent border-0 border-b border-black/25 focus:border-black/50 focus:outline-none font-mono placeholder:text-black/40 text-black"
-                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0' }}
+                className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
                 placeholder="Email"
                 data-testid="contact-email"
               />
@@ -109,8 +115,8 @@ const Contact = () => {
                 required
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/40 text-black resize-none overflow-hidden"
-                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0', lineHeight: '1.3' }}
+                className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/50 text-black resize-none overflow-hidden"
+                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0', lineHeight: '1.4' }}
                 placeholder={t('Mensagem', 'Message')}
                 data-testid="contact-message"
               />
@@ -118,8 +124,8 @@ const Contact = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="font-mono text-black/60 hover:text-black transition-colors disabled:opacity-30 text-center mt-1"
-                style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
+                className="font-mono text-black/70 hover:text-black transition-colors disabled:opacity-30 text-center"
+                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)' }}
                 data-testid="contact-submit"
               >
                 {loading ? '...' : `[${t('enviar', 'send')}]`}
@@ -128,7 +134,7 @@ const Contact = () => {
           </div>
         </div>
 
-        <p className="text-center font-serif text-xs md:text-sm italic text-muted-foreground mt-4 px-4 pb-6">
+        <p className="text-center font-serif text-xs md:text-sm italic text-muted-foreground mt-2 px-4 pb-4">
           {t(
             'Escreva-nos. As suas palavras são importantes.',
             'Write to us. Your words matter.'
