@@ -46,84 +46,89 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 md:pt-28 bg-background" data-testid="contact-page">
-      <div className="py-4 md:py-8 px-4 md:px-8 lg:px-12">
-        <h1 className="font-courier font-bold text-3xl md:text-5xl lg:text-6xl uppercase tracking-tight leading-none">
+    <div className="min-h-screen pt-16 md:pt-24 bg-background" data-testid="contact-page">
+      <div className="py-3 md:py-6 px-4 md:px-8">
+        <h1 className="font-courier font-bold text-2xl md:text-4xl lg:text-5xl uppercase tracking-tight leading-none">
           {t('Contacto', 'Contact')}
         </h1>
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="w-full"
+        transition={{ duration: 0.6 }}
+        className="px-2 md:px-4"
       >
-        {/* Typewriter with form overlay */}
-        <div className="relative w-full max-w-3xl mx-auto">
-          <img
-            src="/img/contacto.png"
-            alt="Typewriter"
-            className="w-full h-auto block"
-          />
-          
-          {/* Form positioned over the paper - uses percentage of image */}
-          <form 
-            onSubmit={handleSubmit} 
-            className="absolute flex flex-col"
-            style={{
-              top: '11%',
-              left: '27%',
-              right: '27%',
-              height: '26%'
-            }}
-            data-testid="contact-form"
-          >
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-transparent border-0 border-b border-black/20 focus:border-black/40 focus:outline-none font-mono placeholder:text-black/40 text-black"
-              style={{ fontSize: 'min(3vw, 14px)', padding: 'min(1vw, 6px) 0' }}
-              placeholder={t('Nome', 'Name')}
-              data-testid="contact-name"
+        {/* Typewriter container - crops black space */}
+        <div className="relative w-full max-w-4xl mx-auto overflow-hidden" style={{ maxHeight: '70vh' }}>
+          {/* Image with negative margins to crop black space */}
+          <div className="relative" style={{ marginTop: '-8%', marginBottom: '-20%' }}>
+            <img
+              src="/img/contacto.png"
+              alt="Typewriter"
+              className="w-full h-auto block"
             />
             
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-transparent border-0 border-b border-black/20 focus:border-black/40 focus:outline-none font-mono placeholder:text-black/40 text-black"
-              style={{ fontSize: 'min(3vw, 14px)', padding: 'min(1vw, 6px) 0' }}
-              placeholder="Email"
-              data-testid="contact-email"
-            />
-            
-            <textarea
-              required
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/40 text-black resize-none overflow-hidden"
-              style={{ fontSize: 'min(3vw, 14px)', padding: 'min(1vw, 6px) 0', lineHeight: '1.4' }}
-              placeholder={t('Mensagem', 'Message')}
-              data-testid="contact-message"
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="font-mono text-black/60 hover:text-black transition-colors disabled:opacity-30 text-center"
-              style={{ fontSize: 'min(3vw, 14px)', padding: 'min(0.5vw, 4px) 0' }}
-              data-testid="contact-submit"
+            {/* Form positioned exactly on the paper */}
+            {/* Paper: top 25%, bottom 47%, left 30%, right 30% */}
+            <form 
+              onSubmit={handleSubmit} 
+              className="absolute flex flex-col justify-between"
+              style={{
+                top: '27%',
+                bottom: '55%',
+                left: '32%',
+                right: '32%',
+                padding: '2%'
+              }}
+              data-testid="contact-form"
             >
-              {loading ? '...' : `[${t('enviar', 'send')}]`}
-            </button>
-          </form>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full bg-transparent border-0 border-b border-black/25 focus:border-black/50 focus:outline-none font-mono placeholder:text-black/40 text-black"
+                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0' }}
+                placeholder={t('Nome', 'Name')}
+                data-testid="contact-name"
+              />
+              
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full bg-transparent border-0 border-b border-black/25 focus:border-black/50 focus:outline-none font-mono placeholder:text-black/40 text-black"
+                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0' }}
+                placeholder="Email"
+                data-testid="contact-email"
+              />
+              
+              <textarea
+                required
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/40 text-black resize-none overflow-hidden"
+                style={{ fontSize: 'clamp(10px, 2vw, 14px)', padding: 'clamp(2px, 0.5vw, 6px) 0', lineHeight: '1.3' }}
+                placeholder={t('Mensagem', 'Message')}
+                data-testid="contact-message"
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="font-mono text-black/60 hover:text-black transition-colors disabled:opacity-30 text-center mt-1"
+                style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
+                data-testid="contact-submit"
+              >
+                {loading ? '...' : `[${t('enviar', 'send')}]`}
+              </button>
+            </form>
+          </div>
         </div>
 
-        <p className="text-center font-serif text-sm md:text-base italic text-muted-foreground mt-6 md:mt-8 px-4 pb-8">
+        <p className="text-center font-serif text-xs md:text-sm italic text-muted-foreground mt-4 px-4 pb-6">
           {t(
             'Escreva-nos. As suas palavras são importantes.',
             'Write to us. Your words matter.'
