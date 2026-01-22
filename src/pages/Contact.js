@@ -64,10 +64,10 @@ const Contact = () => {
           <div 
             className="relative"
             style={{ 
-              marginTop: '-15%', 
+              marginTop: '-25%', 
               marginBottom: '-35%'
-              marginLeft: '-10%',
-              marginRight: '-10%'
+              marginLeft: '-15%',
+              marginRight: '-15%'
             }}
           >
             <img
