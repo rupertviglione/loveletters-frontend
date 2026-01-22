@@ -78,59 +78,59 @@ const Contact = () => {
             
             {/* Form positioned exactly on the paper */}
             <form 
-              onSubmit={handleSubmit} 
-              className="absolute flex flex-col justify-between"
-              style={{
+  onSubmit={handleSubmit} 
+  className="absolute flex flex-col"
+  style={{
                 top: '23%',
                 bottom: '50%',
                 left: '30%',
                 right: '30%',
                 padding: '1.5%'
-              }}
-              data-testid="contact-form"
-            >
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
-                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
-                placeholder={t('Nome', 'Name')}
-                data-testid="contact-name"
-              />
-              
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
-                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
-                placeholder="Email"
-                data-testid="contact-email"
-              />
-              
-              <textarea
-                required
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/50 text-black resize-none overflow-hidden"
-                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0', lineHeight: '1.4' }}
-                placeholder={t('Mensagem', 'Message')}
-                data-testid="contact-message"
-              />
+  }}
+  data-testid="contact-form"
+>
+  <input
+    type="text"
+    required
+    value={formData.name}
+    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+    className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
+    placeholder={t('Nome', 'Name')}
+    data-testid="contact-name"
+  />
+  
+  <input
+    type="email"
+    required
+    value={formData.email}
+    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+    className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
+    placeholder="Email"
+    data-testid="contact-email"
+  />
+  
+  <textarea
+    required
+    value={formData.message}
+    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+    className="w-full bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/50 text-black resize-none overflow-hidden"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0', lineHeight: '1.4', height: 'clamp(40px, 8vw, 80px)' }}
+    placeholder={t('Mensagem', 'Message')}
+    data-testid="contact-message"
+  />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="font-mono text-black/70 hover:text-black transition-colors disabled:opacity-30 text-center"
-                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)' }}
-                data-testid="contact-submit"
-              >
-                {loading ? '...' : `[${t('enviar', 'send')}]`}
-              </button>
-            </form>
+  <button
+    type="submit"
+    disabled={loading}
+    className="font-mono text-black/70 hover:text-black transition-colors disabled:opacity-30 text-center mt-1"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)' }}
+    data-testid="contact-submit"
+  >
+    {loading ? '...' : `[${t('enviar', 'send')}]`}
+  </button>
+</form>
           </div>
         </div>
 
