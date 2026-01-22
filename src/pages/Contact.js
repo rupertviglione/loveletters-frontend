@@ -65,7 +65,7 @@ const Contact = () => {
             className="relative"
             style={{ 
               marginTop: '-25%', 
-              marginBottom: '-35%'
+              marginBottom: '-35%',
               marginLeft: '-15%',
               marginRight: '-15%'
             }}
