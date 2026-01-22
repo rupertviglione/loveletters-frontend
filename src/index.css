@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 6.7%;
+        --card: 44 13% 97%;
+        --card-foreground: 0 0% 6.7%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 6.7%;
+        --primary: 0 0% 6.7%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 6.7%;
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 45%;
+        --accent: 11 79% 45%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 11 79% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 89.8%;
+        --input: 0 0% 94.1%;
+        --ring: 0 0% 6.7%;
+        --radius: 0rem;
+    }
+    .dark {
+        --background: 0 0% 5.9%;
+        --foreground: 0 0% 94.9%;
+        --card: 0 0% 8%;
+        --card-foreground: 0 0% 94.9%;
+        --popover: 0 0% 5.9%;
+        --popover-foreground: 0 0% 94.9%;
+        --primary: 0 0% 94.9%;
+        --primary-foreground: 0 0% 5.9%;
+        --secondary: 0 0% 14%;
+        --secondary-foreground: 0 0% 94.9%;
+        --muted: 0 0% 14%;
+        --muted-foreground: 0 0% 60%;
+        --accent: 11 79% 45%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 11 79% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 14%;
+        --input: 0 0% 12%;
+        --ring: 0 0% 94.9%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+
+    [data-debug-wrapper="true"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+        border-left-width: inherit;
+        border-right-width: inherit;
+        border-top-width: inherit;
+        border-bottom-width: inherit;
+        border-left-style: inherit;
+        border-right-style: inherit;
+        border-top-style: inherit;
+        border-bottom-style: inherit;
+        border-left-color: inherit;
+        border-right-color: inherit;
+        border-top-color: inherit;
+        border-bottom-color: inherit;
+    }
+}

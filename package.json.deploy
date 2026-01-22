@@ -1,0 +1,13 @@
+// ADICIONA ESTAS LINHAS ao teu package.json existente:
+
+// Para GitHub Pages:
+"homepage": "https://SEU-USERNAME.github.io/loveletters",
+"scripts": {
+  // ... scripts existentes ...
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+},
+"devDependencies": {
+  // ... dependências existentes ...
+  "gh-pages": "^6.1.0"
+}
