@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const categories = [
-  { id: 'all', pt: 'Todos', en: 'All' },
   { id: 'tshirts', pt: 'T-shirts', en: 'T-shirts' },
   { id: 'totebags', pt: 'Tote Bags', en: 'Tote Bags' },
   { id: 'posters', pt: 'Posters', en: 'Posters' },
@@ -47,8 +46,8 @@ const Shop = () => {
         </h1>
         <p className="font-fraunces text-lg text-muted-foreground italic max-w-2xl">
           {t(
-            'Cartas de amor para vestir, tocar e guardar.',
-            'Love letters to wear, touch and keep.'
+            'Usa o que sentes.',
+            'Wear what you feel.'
           )}
         </p>
       </div>
