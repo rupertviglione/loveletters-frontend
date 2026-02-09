@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
@@ -12,6 +12,7 @@ const Contact = () => {
   const { t } = useLanguage();
   const audioContextRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lineJumpTimeoutRef = useRef(null);
   const nameRef = useRef(null);
   const emailRef = useRef(null);
   const messageRef = useRef(null);
@@ -24,6 +25,7 @@ const Contact = () => {
   const [activeField, setActiveField] = useState('name');
   const [pressedKey, setPressedKey] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [lineJump, setLineJump] = useState(false);
 
   const keyRows = useMemo(
     () => [
@@ -73,10 +75,31 @@ const Contact = () => {
     oscillator.stop(now + 0.09);
   };
 
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (lineJumpTimeoutRef.current) {
+        clearTimeout(lineJumpTimeoutRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
   const handleKeyDown = (event) => {
     const normalized = normalizeKey(event.key);
     setPressedKey(normalized);
     setIsTyping(true);
+    if (event.key === 'Enter') {
+      setLineJump(true);
+      if (lineJumpTimeoutRef.current) {
+        clearTimeout(lineJumpTimeoutRef.current);
+      }
+      lineJumpTimeoutRef.current = setTimeout(() => setLineJump(false), 180);
+    }
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -105,8 +128,13 @@ const Contact = () => {
 
   const activeValue = formData[activeField] || '';
   const charPerLine = activeField === 'message' ? 26 : 22;
-  const lineIndex = Math.floor(activeValue.length / charPerLine);
-  const columnIndex = activeValue.length % charPerLine;
+  const activeLines =
+    activeField === 'message' ? activeValue.split('\n') : [activeValue];
+  const lineIndex = Math.max(activeLines.length - 1, 0);
+  const columnIndex =
+    activeField === 'message'
+      ? activeLines[activeLines.length - 1]?.length || 0
+      : activeValue.length;
   const carriageX = Math.min(columnIndex / charPerLine, 1) * 28;
   const paperShift = activeField === 'message' ? Math.min(lineIndex, 3) * -6 : 0;
   const caretTopMap = {
@@ -187,7 +215,7 @@ const Contact = () => {
               }}
               animate={{
                 x: carriageX,
-                y: paperShift,
+                y: paperShift + (lineJump ? -2 : 0),
                 rotate: isTyping ? -0.15 : 0
               }}
               transition={{ type: 'spring', stiffness: 250, damping: 20 }}
@@ -281,16 +309,21 @@ const Contact = () => {
                                 ? 'w-12'
                                 : 'w-7';
                         return (
-                          <span
+                          <motion.span
                             key={key}
                             className={`flex h-7 items-center justify-center rounded border text-[10px] font-mono uppercase transition-all ${widthClass} ${
                               isActive
                                 ? 'border-black bg-black text-white shadow-inner'
                                 : 'border-black/30 bg-white/70 text-black/70'
                             }`}
+                            animate={{
+                              y: isActive ? 2 : 0,
+                              scale: isActive ? 0.96 : 1
+                            }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 18 }}
                           >
                             {key}
-                          </span>
+                          </motion.span>
                         );
                       })}
                     </div>
