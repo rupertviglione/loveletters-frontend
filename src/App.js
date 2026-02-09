@@ -12,8 +12,8 @@ import ProductDetail from '@/pages/ProductDetail';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import Success from '@/pages/Success';
-import About from '@/pages/About';
 import Contact from '@/pages/Contact';
+import ShippingReturns from '@/pages/ShippingReturns';
 import '@/App.css';
 
 function App() {
@@ -32,8 +32,8 @@ function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/success" element={<Success />} />
-                  <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/shipping-returns" element={<ShippingReturns />} />
                 </Routes>
               </main>
               <Footer />

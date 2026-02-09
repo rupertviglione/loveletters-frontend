@@ -58,37 +58,37 @@ const Contact = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Typewriter container - aggressive crop of black space */}
+        {/* Typewriter container - show more of the machine on desktop */}
         <div className="relative w-full overflow-hidden">
-          {/* Negative margins to crop black space aggressively */}
-          <div 
-            className="relative"
-            style={{ 
-              marginTop: '-25%', 
-              marginBottom: '-35%',
-              marginLeft: '-15%',
-              marginRight: '-15%'
-            }}
-          >
-            <img
-              src="/img/contacto.png"
-              alt="Typewriter"
-              className="w-full h-auto block"
-            />
-            
-            {/* Form positioned exactly on the paper */}
-            <form 
-  onSubmit={handleSubmit} 
-  className="absolute flex flex-col"
-  style={{
-                top: '23%',
-                bottom: '50%',
-                left: '30%',
-                right: '30%',
-                padding: '1.5%'
-  }}
-  data-testid="contact-form"
->
+          <div className="relative mx-auto w-full max-w-6xl px-4 md:px-8">
+            <div
+              className="relative"
+              style={{
+                marginTop: 'clamp(-12%, -6vw, -6%)',
+                marginBottom: 'clamp(-20%, -10vw, -12%)',
+                marginLeft: 'clamp(-6%, -3vw, -3%)',
+                marginRight: 'clamp(-6%, -3vw, -3%)'
+              }}
+            >
+              <img
+                src="/img/contacto.png"
+                alt="Typewriter"
+                className="w-full h-auto block"
+              />
+
+              {/* Form positioned exactly on the paper */}
+              <form
+                onSubmit={handleSubmit}
+                className="absolute flex flex-col"
+                style={{
+                  top: '23%',
+                  bottom: '50%',
+                  left: '30%',
+                  right: '30%',
+                  padding: '1.5%'
+                }}
+                data-testid="contact-form"
+              >
   <input
     type="text"
     required
@@ -131,6 +131,7 @@ const Contact = () => {
     {loading ? '...' : `[${t('enviar', 'send')}]`}
   </button>
 </form>
+            </div>
           </div>
         </div>
 

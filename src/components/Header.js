@@ -44,15 +44,6 @@ const Header = () => {
             {t('Loja', 'Shop')}
           </Link>
           <Link
-            to="/about"
-            className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
-              isActive('/about') ? 'opacity-60' : ''
-            }`}
-            data-testid="nav-about"
-          >
-            {t('Sobre', 'About')}
-          </Link>
-          <Link
             to="/contact"
             className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
               isActive('/contact') ? 'opacity-60' : ''
@@ -115,14 +106,6 @@ const Header = () => {
           }`}
         >
           {t('Loja', 'Shop')}
-        </Link>
-        <Link
-          to="/about"
-          className={`font-courier font-bold uppercase text-xs tracking-wider hover:opacity-60 transition-opacity ${
-            isActive('/about') ? 'opacity-60' : ''
-          }`}
-        >
-          {t('Sobre', 'About')}
         </Link>
         <Link
           to="/contact"
