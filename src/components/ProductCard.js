@@ -27,11 +27,11 @@ const ProductCard = ({ product }) => {
       data-testid={`product-card-${product.id}`}
     >
       <Link to={`/shop/${product.id}`} className="block">
-        <div className="aspect-square overflow-hidden bg-muted border-b border-border">
+        <div className="aspect-square overflow-hidden bg-muted border-b border-border p-4">
           <img
             src={product.images[0]}
             alt={title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
         </div>
 

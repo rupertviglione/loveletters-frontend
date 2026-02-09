@@ -17,6 +17,30 @@ const PoemLine = ({ line, delay = 0 }) => {
   );
 };
 
+const AnimatedText = ({ text, delay = 0, className }) => {
+  return (
+    <motion.p
+      className={className}
+      initial="hidden"
+      animate="visible"
+      variants={{}}
+      aria-label={text}
+    >
+      {Array.from(text).map((char, index) => (
+        <motion.span
+          key={`${char}-${index}`}
+          className="inline-block"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: delay + index * 0.03, duration: 0.4 }}
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </motion.p>
+  );
+};
+
 const Home = () => {
   const { t } = useLanguage();
 
@@ -82,12 +106,14 @@ const Home = () => {
                 Love Letters.
               </h1>
               
-              <p className="font-serif text-xl md:text-2xl italic text-muted-foreground max-w-3xl">
-                {t(
+              <AnimatedText
+                className="font-serif text-xl md:text-2xl italic text-muted-foreground max-w-3xl"
+                text={t(
                   'Sim, adoramos cartas de amor.',
                   'Yes, we love love letters.'
                 )}
-              </p>
+                delay={0.2}
+              />
             </motion.div>
 
             <motion.div
