@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
@@ -10,12 +10,138 @@ const API = process.env.REACT_APP_BACKEND_URL
 
 const Contact = () => {
   const { t } = useLanguage();
+  const audioContextRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const lineJumpTimeoutRef = useRef(null);
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const messageRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     message: ''
   });
   const [loading, setLoading] = useState(false);
+  const [activeField, setActiveField] = useState('name');
+  const [pressedKey, setPressedKey] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [lineJump, setLineJump] = useState(false);
+
+  const keyRows = useMemo(
+    () => [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace'],
+      ['Space', 'Enter']
+    ],
+    []
+  );
+
+  const normalizeKey = (key) => {
+    if (key === ' ') return 'Space';
+    if (key === 'Backspace') return 'Backspace';
+    if (key === 'Enter') return 'Enter';
+    if (key.length === 1) return key.toUpperCase();
+    return key;
+  };
+
+  const playTypewriterSound = (tone = 'key') => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    const audioContext = audioContextRef.current;
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+    const frequencyMap = {
+      key: 280,
+      backspace: 190,
+      bell: 920
+    };
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(frequencyMap[tone] || frequencyMap.key, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.09);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (lineJumpTimeoutRef.current) {
+        clearTimeout(lineJumpTimeoutRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const handleKeyDown = (event) => {
+    const normalized = normalizeKey(event.key);
+    setPressedKey(normalized);
+    setIsTyping(true);
+    if (event.key === 'Enter') {
+      setLineJump(true);
+      if (lineJumpTimeoutRef.current) {
+        clearTimeout(lineJumpTimeoutRef.current);
+      }
+      lineJumpTimeoutRef.current = setTimeout(() => setLineJump(false), 180);
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      setPressedKey(null);
+    }, 150);
+
+    if (event.key === 'Enter') {
+      playTypewriterSound('bell');
+    } else if (event.key === 'Backspace') {
+      playTypewriterSound('backspace');
+    } else {
+      playTypewriterSound('key');
+    }
+  };
+
+  const scrollFieldIntoView = (field) => {
+    const fieldMap = {
+      name: nameRef,
+      email: emailRef,
+      message: messageRef
+    };
+    fieldMap[field]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const activeValue = formData[activeField] || '';
+  const charPerLine = activeField === 'message' ? 26 : 22;
+  const activeLines =
+    activeField === 'message' ? activeValue.split('\n') : [activeValue];
+  const lineIndex = Math.max(activeLines.length - 1, 0);
+  const columnIndex =
+    activeField === 'message'
+      ? activeLines[activeLines.length - 1]?.length || 0
+      : activeValue.length;
+  const carriageX = Math.min(columnIndex / charPerLine, 1) * 28;
+  const paperShift = activeField === 'message' ? Math.min(lineIndex, 3) * -6 : 0;
+  const caretTopMap = {
+    name: '6%',
+    email: '38%',
+    message: '70%'
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
