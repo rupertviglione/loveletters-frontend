@@ -184,152 +184,79 @@ const Contact = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Typewriter container - aggressive crop of black space */}
+        {/* Typewriter container - show more of the machine on desktop */}
         <div className="relative w-full overflow-hidden">
-          {/* Negative margins to crop black space aggressively */}
-          <div 
-            className="relative"
-            style={{ 
-              marginTop: '-25%', 
-              marginBottom: '-35%',
-              marginLeft: '-15%',
-              marginRight: '-15%'
-            }}
-          >
-            <img
-              src="/img/contacto.png"
-              alt="Typewriter"
-              className="w-full h-auto block"
-            />
-            
-            {/* Form positioned exactly on the paper */}
-            <motion.form 
-              onSubmit={handleSubmit}
-              className="absolute flex flex-col"
+          <div className="relative mx-auto w-full max-w-6xl px-4 md:px-8">
+            <div
+              className="relative"
               style={{
-                top: '23%',
-                bottom: '50%',
-                left: '30%',
-                right: '30%',
-                padding: '1.5%'
+                marginTop: 'clamp(-12%, -6vw, -6%)',
+                marginBottom: 'clamp(-20%, -10vw, -12%)',
+                marginLeft: 'clamp(-6%, -3vw, -3%)',
+                marginRight: 'clamp(-6%, -3vw, -3%)'
               }}
-              animate={{
-                x: carriageX,
-                y: paperShift + (lineJump ? -2 : 0),
-                rotate: isTyping ? -0.15 : 0
-              }}
-              transition={{ type: 'spring', stiffness: 250, damping: 20 }}
-              data-testid="contact-form"
             >
-              <div className="relative">
-                <motion.div
-                  className="absolute h-4 w-[2px] bg-black/60"
-                  style={{ top: caretTopMap[activeField], left: '0.25rem' }}
-                  animate={{ x: carriageX }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                />
-                <input
-                  ref={nameRef}
-                  type="text"
-                  required
-                  value={formData.name}
-                  onFocus={() => {
-                    setActiveField('name');
-                    scrollFieldIntoView('name');
-                  }}
-                  onKeyDown={handleKeyDown}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
-                  style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
-                  placeholder={t('Nome', 'Name')}
-                  data-testid="contact-name"
-                />
-                
-                <input
-                  ref={emailRef}
-                  type="email"
-                  required
-                  value={formData.email}
-                  onFocus={() => {
-                    setActiveField('email');
-                    scrollFieldIntoView('email');
-                  }}
-                  onKeyDown={handleKeyDown}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
-                  style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
-                  placeholder="Email"
-                  data-testid="contact-email"
-                />
-                
-                <textarea
-                  ref={messageRef}
-                  required
-                  value={formData.message}
-                  onFocus={() => {
-                    setActiveField('message');
-                    scrollFieldIntoView('message');
-                  }}
-                  onKeyDown={handleKeyDown}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/50 text-black resize-none overflow-hidden"
-                  style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0', lineHeight: '1.4', height: 'clamp(40px, 8vw, 80px)' }}
-                  placeholder={t('Mensagem', 'Message')}
-                  data-testid="contact-message"
-                />
-              </div>
+              <img
+                src="/img/contacto.png"
+                alt="Typewriter"
+                className="w-full h-auto block"
+              />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="font-mono text-black/70 hover:text-black transition-colors disabled:opacity-30 text-center mt-1"
-                style={{ fontSize: 'clamp(11px, 2.5vw, 16px)' }}
-                data-testid="contact-submit"
+              {/* Form positioned exactly on the paper */}
+              <form
+                onSubmit={handleSubmit}
+                className="absolute flex flex-col"
+                style={{
+                  top: '23%',
+                  bottom: '50%',
+                  left: '30%',
+                  right: '30%',
+                  padding: '1.5%'
+                }}
+                data-testid="contact-form"
               >
-                {loading ? '...' : `[${t('enviar', 'send')}]`}
-              </button>
-            </motion.form>
+  <input
+    type="text"
+    required
+    value={formData.name}
+    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+    className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
+    placeholder={t('Nome', 'Name')}
+    data-testid="contact-name"
+  />
+  
+  <input
+    type="email"
+    required
+    value={formData.email}
+    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+    className="w-full bg-transparent border-0 border-b border-black/30 focus:border-black/60 focus:outline-none font-mono placeholder:text-black/50 text-black"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0' }}
+    placeholder="Email"
+    data-testid="contact-email"
+  />
+  
+  <textarea
+    required
+    value={formData.message}
+    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+    className="w-full bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/50 text-black resize-none overflow-hidden"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)', padding: 'clamp(3px, 0.8vw, 8px) 0', lineHeight: '1.4', height: 'clamp(40px, 8vw, 80px)' }}
+    placeholder={t('Mensagem', 'Message')}
+    data-testid="contact-message"
+  />
 
-            <div className="absolute bottom-[6%] left-1/2 w-[70%] -translate-x-1/2">
-              <div className="rounded-lg border border-black/10 bg-white/60 px-3 py-2 shadow-sm backdrop-blur-sm">
-                <p className="text-center font-mono text-[10px] uppercase tracking-[0.2em] text-black/60">
-                  {t('Teclado da máquina', 'Typewriter keys')}
-                </p>
-                <div className="mt-2 flex flex-col gap-1">
-                  {keyRows.map((row) => (
-                    <div key={row.join('-')} className="flex justify-center gap-1">
-                      {row.map((key) => {
-                        const isActive = pressedKey === key;
-                        const widthClass =
-                          key === 'Space'
-                            ? 'w-32'
-                            : key === 'Backspace'
-                              ? 'w-16'
-                              : key === 'Enter'
-                                ? 'w-12'
-                                : 'w-7';
-                        return (
-                          <motion.span
-                            key={key}
-                            className={`flex h-7 items-center justify-center rounded border text-[10px] font-mono uppercase transition-all ${widthClass} ${
-                              isActive
-                                ? 'border-black bg-black text-white shadow-inner'
-                                : 'border-black/30 bg-white/70 text-black/70'
-                            }`}
-                            animate={{
-                              y: isActive ? 2 : 0,
-                              scale: isActive ? 0.96 : 1
-                            }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                          >
-                            {key}
-                          </motion.span>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
+  <button
+    type="submit"
+    disabled={loading}
+    className="font-mono text-black/70 hover:text-black transition-colors disabled:opacity-30 text-center mt-1"
+    style={{ fontSize: 'clamp(11px, 2.5vw, 16px)' }}
+    data-testid="contact-submit"
+  >
+    {loading ? '...' : `[${t('enviar', 'send')}]`}
+  </button>
+</form>
             </div>
           </div>
         </div>
