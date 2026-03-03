@@ -11,7 +11,8 @@ const categories = [
   { id: 'totebags', pt: 'Tote Bags', en: 'Tote Bags' },
   { id: 'posters', pt: 'Posters', en: 'Posters' },
   { id: 'complementos', pt: 'Complementos', en: 'Accessories' },
-  { id: 'bundles', pt: 'Conjuntos', en: 'Bundles' }
+  { id: 'bundles', pt: 'Conjuntos', en: 'Bundles' },
+  { id: 'rascunhos', pt: 'Rascunhos', en: 'Drafts' }
 ];
 
 const Shop = () => {
@@ -70,6 +71,27 @@ const Shop = () => {
           ))}
         </div>
       </div>
+
+      {/* Rascunhos Info Banner */}
+      {selectedCategory === 'rascunhos' && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-secondary/30 border-b border-border py-6 px-4 md:px-8 lg:px-12"
+        >
+          <div className="max-w-3xl">
+            <h2 className="font-courier font-bold text-lg md:text-xl uppercase mb-3">
+              {t('Rascunhos', 'Drafts')}
+            </h2>
+            <p className="font-serif text-sm md:text-base leading-relaxed">
+              {t(
+                'Produtos com pequenos defeitos que, pela sua história e pela sustentabilidade, ficam aqui disponíveis a preços simbólicos. Cada imperfeição conta uma história — e todas merecem ser amadas.',
+                'Products with minor defects that, for their story and sustainability, are available here at symbolic prices. Each imperfection tells a story — and all deserve to be loved.'
+              )}
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24">

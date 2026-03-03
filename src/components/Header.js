@@ -18,10 +18,10 @@ const Header = () => {
       <div className="px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between">
         <Link 
           to="/" 
-          className="hover:opacity-70 transition-opacity font-courier font-bold tracking-tight text-lg"
+          className="hover:opacity-70 transition-opacity flex items-center gap-2"
           data-testid="logo-link"
         >
-          love letters.
+          <img src="/logo-new.png" alt="Love Letters" className="h-7 md:h-9 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -30,9 +30,9 @@ const Header = () => {
             className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
               isActive('/') ? 'opacity-60' : ''
             }`}
-            data-testid="nav-home"
+            data-testid="nav-about"
           >
-            {t('Início', 'Home')}
+            {t('Sobre', 'About')}
           </Link>
           <Link
             to="/shop"
@@ -97,7 +97,7 @@ const Header = () => {
             isActive('/') ? 'opacity-60' : ''
           }`}
         >
-          {t('Início', 'Home')}
+          {t('Sobre', 'About')}
         </Link>
         <Link
           to="/shop"
