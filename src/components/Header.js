@@ -28,9 +28,8 @@ const Header = () => {
           to="/" 
           className="hover:opacity-70 transition-opacity flex items-center"
           data-testid="logo-link"
-          style={{ transform: 'scale(2.5)', transformOrigin: 'left center', marginLeft: '40px' }}
         >
-          <img src="/logo.svg" alt="Love Letters" style={{ height: '50px', width: 'auto' }} />
+          <img src="/logo.svg" alt="Love Letters" style={{ width: '200px', height: 'auto' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
