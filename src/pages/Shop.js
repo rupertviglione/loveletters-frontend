@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProductCard from '@/components/ProductCard';
 import { motion } from 'framer-motion';
+import ScrollingBanner from '@/components/ScrollingBanner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -40,7 +41,7 @@ const Shop = () => {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32" data-testid="shop-page">
+    <div className="min-h-screen pt-24 md:pt-32 pb-20" data-testid="shop-page">
       <div className="border-b border-border py-8 md:py-12 px-4 md:px-8 lg:px-12">
         <h1 className="font-archivo font-black text-4xl md:text-6xl tracking-tighter uppercase leading-none mb-6">
           {t('Loja', 'Shop')}
@@ -61,7 +62,7 @@ const Shop = () => {
               onClick={() => setSelectedCategory(category.id)}
               className={`px-6 py-2 border uppercase tracking-widest text-xs font-bold transition-all duration-300 ${
                 selectedCategory === category.id
-                  ? 'bg-primary text-primary-foreground border-primary'
+                  ? 'bg-accent text-white border-accent'
                   : 'bg-transparent border-border hover:border-accent hover:text-accent'
               }`}
               data-testid={`category-filter-${category.id}`}
@@ -112,6 +113,8 @@ const Shop = () => {
           </p>
         </div>
       )}
+
+      <ScrollingBanner />
     </div>
   );
 };

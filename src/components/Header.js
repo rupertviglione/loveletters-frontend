@@ -12,9 +12,15 @@ const Header = () => {
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
+  const isHomePage = location.pathname === '/';
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b border-border" data-testid="header">
+    <header 
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        isHomePage ? 'bg-transparent' : 'bg-background/95 backdrop-blur-sm border-b border-border'
+      }`} 
+      data-testid="header"
+    >
       <div className="px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between">
         <Link 
           to="/" 
@@ -27,8 +33,8 @@ const Header = () => {
         <nav className="hidden md:flex items-center gap-8">
           <Link
             to="/"
-            className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
-              isActive('/') ? 'opacity-60' : ''
+            className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
+              isActive('/') ? 'text-accent' : 'hover:text-accent'
             }`}
             data-testid="nav-about"
           >
@@ -36,8 +42,8 @@ const Header = () => {
           </Link>
           <Link
             to="/shop"
-            className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
-              isActive('/shop') ? 'opacity-60' : ''
+            className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
+              isActive('/shop') ? 'text-accent' : 'hover:text-accent'
             }`}
             data-testid="nav-shop"
           >
@@ -45,8 +51,8 @@ const Header = () => {
           </Link>
           <Link
             to="/contact"
-            className={`font-courier font-bold uppercase text-sm tracking-wider hover:opacity-60 transition-opacity ${
-              isActive('/contact') ? 'opacity-60' : ''
+            className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
+              isActive('/contact') ? 'text-accent' : 'hover:text-accent'
             }`}
             data-testid="nav-contact"
           >
@@ -57,7 +63,7 @@ const Header = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
-            className="p-2 hover:opacity-60 transition-opacity"
+            className="p-2 hover:text-accent transition-all duration-300"
             aria-label={t('Alternar tema', 'Toggle theme')}
             data-testid="theme-toggle"
           >
@@ -66,7 +72,7 @@ const Header = () => {
 
           <button
             onClick={toggleLanguage}
-            className="font-mono font-bold text-xs uppercase tracking-widest hover:opacity-60 transition-opacity"
+            className="font-mono font-bold text-xs uppercase tracking-widest hover:text-accent transition-all duration-300"
             data-testid="language-toggle"
           >
             {language.toUpperCase()}
@@ -74,13 +80,13 @@ const Header = () => {
 
           <Link
             to="/cart"
-            className="relative p-2 hover:opacity-60 transition-opacity"
+            className="relative p-2 hover:text-accent transition-all duration-300"
             data-testid="cart-link"
           >
             <ShoppingCart size={18} />
             {getItemCount() > 0 && (
               <span 
-                className="absolute -top-1 -right-1 bg-foreground text-background text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center font-mono"
+                className="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center font-mono"
                 data-testid="cart-count"
               >
                 {getItemCount()}
@@ -90,27 +96,27 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border px-4 py-3 flex justify-around">
+      <nav className="md:hidden border-t border-border px-4 py-3 flex justify-around bg-background/95 backdrop-blur-sm">
         <Link
           to="/"
-          className={`font-courier font-bold uppercase text-xs tracking-wider hover:opacity-60 transition-opacity ${
-            isActive('/') ? 'opacity-60' : ''
+          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+            isActive('/') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
           {t('Sobre', 'About')}
         </Link>
         <Link
           to="/shop"
-          className={`font-courier font-bold uppercase text-xs tracking-wider hover:opacity-60 transition-opacity ${
-            isActive('/shop') ? 'opacity-60' : ''
+          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+            isActive('/shop') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
           {t('Loja', 'Shop')}
         </Link>
         <Link
           to="/contact"
-          className={`font-courier font-bold uppercase text-xs tracking-wider hover:opacity-60 transition-opacity ${
-            isActive('/contact') ? 'opacity-60' : ''
+          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+            isActive('/contact') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
           {t('Contacto', 'Contact')}

@@ -1,12 +1,13 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
+import ScrollingBanner from '@/components/ScrollingBanner';
 
 const About = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32" data-testid="about-page">
+    <div className="min-h-screen pt-24 md:pt-32 pb-20" data-testid="about-page">
       <div className="py-8 md:py-12 px-4 md:px-8 lg:px-12">
         <h1 className="font-courier font-bold text-4xl md:text-6xl uppercase tracking-tight leading-none">
           {t('Sobre', 'About')}
@@ -95,6 +96,8 @@ const About = () => {
           </motion.div>
         </div>
       </div>
+
+      <ScrollingBanner />
     </div>
   );
 };
