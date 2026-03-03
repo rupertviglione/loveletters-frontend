@@ -110,8 +110,8 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 bg-background" data-testid="contact-page">
-      <div className="px-4 md:px-8 mb-0">
+    <div className="min-h-screen pt-32 bg-background" data-testid="contact-page">
+      <div className="px-4 md:px-8 mb-2">
         <h1 className="font-syne font-extrabold text-5xl md:text-7xl uppercase tracking-tight leading-none">
           {t('CONTACTO', 'CONTACT')}
         </h1>
@@ -121,7 +121,7 @@ const Contact = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full mt-4"
+        className="relative w-full mt-2"
       >
         <div className="relative w-full max-w-4xl mx-auto px-4">
           <div className="relative" style={{ aspectRatio: '1/1', filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))' }}>
