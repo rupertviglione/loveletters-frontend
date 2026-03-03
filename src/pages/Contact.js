@@ -110,8 +110,8 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-32 bg-background" data-testid="contact-page">
-      <div className="px-4 md:px-8 mb-2">
+    <div className="min-h-screen bg-background" data-testid="contact-page" style={{ paddingTop: '100px' }}>
+      <div className="px-4 md:px-8">
         <h1 className="font-syne font-extrabold text-5xl md:text-7xl uppercase tracking-tight leading-none">
           {t('CONTACTO', 'CONTACT')}
         </h1>
@@ -121,7 +121,8 @@ const Contact = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full mt-2"
+        className="relative w-full"
+        style={{ marginTop: '8px' }}
       >
         <div className="relative w-full max-w-4xl mx-auto px-4">
           <div className="relative" style={{ aspectRatio: '1/1', filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))' }}>
@@ -227,7 +228,6 @@ const Contact = () => {
         </p>
       </motion.div>
 
-      {/* Banner - MUITO ESPAÇO */}
       <div className="my-16">
         <Link to="/shop" className="block">
           <div className="bg-accent overflow-hidden py-4">

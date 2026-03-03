@@ -21,14 +21,16 @@ const Header = () => {
     <header 
       className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/40 backdrop-blur-sm border-b border-border/30"
       data-testid="header"
+      style={{ padding: '4px 0' }}
     >
-      <div className="px-4 md:px-8 lg:px-12 py-1 flex items-center justify-between">
+      <div className="px-4 md:px-8 lg:px-12 flex items-center justify-between">
         <Link 
           to="/" 
           className="hover:opacity-70 transition-opacity flex items-center"
           data-testid="logo-link"
+          style={{ transform: 'scale(2.5)', transformOrigin: 'left center', marginLeft: '40px' }}
         >
-          <img src="/logo.svg" alt="Love Letters" className="h-24 md:h-32 lg:h-40 w-auto" style={{ maxWidth: '500px' }} />
+          <img src="/logo.svg" alt="Love Letters" style={{ height: '50px', width: 'auto' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -97,7 +99,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border/30 px-4 py-1 flex justify-around bg-background/40">
+      <nav className="md:hidden border-t border-border/30 px-4 flex justify-around bg-background/40" style={{ padding: '4px 16px' }}>
         <Link
           to="/"
           className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
