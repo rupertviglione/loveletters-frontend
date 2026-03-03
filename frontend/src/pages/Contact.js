@@ -125,30 +125,30 @@ const Contact = () => {
         style={{ marginTop: '-5px' }}
       >
         {/* Typewriter with form overlay - works for both mobile and desktop */}
-        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4">
+        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4 overflow-hidden">
           <div 
             className="relative w-full" 
             style={{ 
               filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
             }}
           >
-            {/* Typewriter image - full width on mobile for maximum paper size */}
+            {/* Typewriter image - scaled up on mobile to fill more space */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
-              className="w-full h-auto object-contain"
+              className="w-full h-auto object-contain md:scale-100 scale-150 origin-center"
               style={{ filter: 'brightness(1.02) contrast(0.98)' }}
             />
             
-            {/* Form positioned on the paper - adjusted for mobile */}
+            {/* Form positioned on the paper - adjusted for mobile zoom */}
             <form
               onSubmit={handleSubmit}
               onKeyDown={handleKeyDown}
               className="absolute flex flex-col"
               style={{
-                top: '11%',
-                left: '26%',
-                right: '26%',
+                top: '18%',
+                left: '32%',
+                right: '32%',
                 gap: 'clamp(4px, 1vw, 12px)'
               }}
               data-testid="contact-form"
