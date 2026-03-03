@@ -124,27 +124,34 @@ const Contact = () => {
         className="relative w-full"
         style={{ marginTop: '-5px' }}
       >
-        {/* Desktop: original layout with form on image */}
-        <div className="hidden md:block relative w-full max-w-4xl mx-auto px-4">
-          <div className="relative" style={{ aspectRatio: '1/1', filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))' }}>
+        {/* Typewriter with form overlay - works for both mobile and desktop */}
+        <div className="relative w-full max-w-4xl mx-auto px-1 md:px-4">
+          <div 
+            className="relative w-full" 
+            style={{ 
+              filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
+            }}
+          >
+            {/* Typewriter image - full width on mobile for maximum paper size */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
-              className="w-full h-full object-contain"
+              className="w-full h-auto object-contain"
               style={{ filter: 'brightness(1.02) contrast(0.98)' }}
             />
             
+            {/* Form positioned on the paper - adjusted for mobile */}
             <form
               onSubmit={handleSubmit}
               onKeyDown={handleKeyDown}
               className="absolute flex flex-col"
               style={{
-                top: '12%',
-                left: '28%',
-                right: '28%',
-                gap: 'clamp(6px, 1.2vw, 12px)'
+                top: '11%',
+                left: '26%',
+                right: '26%',
+                gap: 'clamp(4px, 1vw, 12px)'
               }}
-              data-testid="contact-form-desktop"
+              data-testid="contact-form"
             >
               <input
                 type="text"
@@ -153,11 +160,12 @@ const Contact = () => {
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
                 style={{ 
-                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
-                  padding: 'clamp(3px, 0.5vw, 6px) 0',
-                  lineHeight: '1.4'
+                  fontSize: 'clamp(8px, 2.5vw, 15px)', 
+                  padding: 'clamp(2px, 0.5vw, 6px) 0',
+                  lineHeight: '1.3'
                 }}
                 placeholder={t('Nome', 'Name')}
+                data-testid="contact-name"
               />
 
               <input
@@ -167,25 +175,27 @@ const Contact = () => {
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
                 style={{ 
-                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
-                  padding: 'clamp(3px, 0.5vw, 6px) 0',
-                  lineHeight: '1.4'
+                  fontSize: 'clamp(8px, 2.5vw, 15px)', 
+                  padding: 'clamp(2px, 0.5vw, 6px) 0',
+                  lineHeight: '1.3'
                 }}
                 placeholder="Email"
+                data-testid="contact-email"
               />
 
               <textarea
                 required
                 value={formData.message}
                 onChange={(e) => handleInputChange('message', e.target.value)}
-                rows={5}
+                rows={4}
                 className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none"
                 style={{ 
-                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
-                  padding: 'clamp(3px, 0.5vw, 6px) 0',
-                  lineHeight: '1.6'
+                  fontSize: 'clamp(8px, 2.5vw, 15px)', 
+                  padding: 'clamp(2px, 0.5vw, 6px) 0',
+                  lineHeight: '1.4'
                 }}
                 placeholder={t('Mensagem', 'Message')}
+                data-testid="contact-message"
               />
 
               <button
@@ -193,74 +203,15 @@ const Contact = () => {
                 disabled={loading}
                 className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left"
                 style={{ 
-                  fontSize: 'clamp(9px, 1.1vw, 13px)',
-                  marginTop: 'clamp(4px, 0.8vw, 10px)'
+                  fontSize: 'clamp(7px, 2vw, 13px)',
+                  marginTop: 'clamp(2px, 0.5vw, 10px)'
                 }}
+                data-testid="contact-submit"
               >
                 {loading ? '...' : `[${t('enviar', 'send')}]`}
               </button>
             </form>
           </div>
-        </div>
-
-        {/* Mobile: Image first (full width), then form below */}
-        <div className="md:hidden px-2">
-          {/* Typewriter image - full width on mobile */}
-          <div className="relative w-full" style={{ filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))' }}>
-            <img
-              src="/img/maquina-nova.png"
-              alt="Typewriter"
-              className="w-full h-auto object-contain"
-              style={{ filter: 'brightness(1.02) contrast(0.98)' }}
-            />
-          </div>
-
-          {/* Mobile form - below the image, within viewport */}
-          <form
-            onSubmit={handleSubmit}
-            onKeyDown={handleKeyDown}
-            className="flex flex-col gap-4 px-4 py-6 bg-background"
-            data-testid="contact-form"
-          >
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              className="w-full bg-transparent border-0 border-b border-foreground/20 focus:border-foreground/40 focus:outline-none font-mono text-foreground placeholder:text-foreground/40 text-sm py-3"
-              placeholder={t('Nome', 'Name')}
-              data-testid="contact-name"
-            />
-
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className="w-full bg-transparent border-0 border-b border-foreground/20 focus:border-foreground/40 focus:outline-none font-mono text-foreground placeholder:text-foreground/40 text-sm py-3"
-              placeholder="Email"
-              data-testid="contact-email"
-            />
-
-            <textarea
-              required
-              value={formData.message}
-              onChange={(e) => handleInputChange('message', e.target.value)}
-              rows={4}
-              className="w-full bg-transparent border border-foreground/20 focus:border-foreground/40 focus:outline-none font-mono text-foreground placeholder:text-foreground/40 resize-none text-sm p-3"
-              placeholder={t('Mensagem', 'Message')}
-              data-testid="contact-message"
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full font-mono text-sm py-3 px-6 bg-foreground text-background hover:bg-accent transition-colors disabled:opacity-30 uppercase tracking-wider font-bold"
-              data-testid="contact-submit"
-            >
-              {loading ? '...' : t('Enviar', 'Send')}
-            </button>
-          </form>
         </div>
 
         <AnimatePresence>
@@ -284,8 +235,6 @@ const Contact = () => {
           )}
         </p>
       </motion.div>
-
-      {/* NO BANNER on contact page for cleaner mobile experience */}
     </div>
   );
 };
