@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Header, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,8 +9,10 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import stripe
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -21,11 +24,69 @@ db = client[os.environ['DB_NAME']]
 # Configure Stripe
 stripe.api_key = os.environ.get('STRIPE_API_KEY', '')
 
+# Security
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'weloveloveletters_secret_key_2026')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+# Auth Models
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# Auth Functions
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    
+    user = await db.admins.find_one({"username": token_data.username}, {"_id": 0})
+    if user is None:
+        raise credentials_exception
+    return user
 
 class ProductVariant(BaseModel):
     sizes: Optional[List[str]] = None
@@ -387,6 +448,105 @@ async def submit_contact(form: ContactForm):
     except Exception as e:
         logger.error(f"Error submitting contact form: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# ADMIN ENDPOINTS
+# ============================================
+
+@api_router.post("/admin/login", response_model=Token)
+async def admin_login(login_req: LoginRequest):
+    # Check if admin user exists, if not create it
+    admin = await db.admins.find_one({"username": login_req.username}, {"_id": 0})
+    
+    if not admin:
+        # Create the admin user on first login attempt with correct credentials
+        if login_req.username == "tmargaridarodrigues" and login_req.password == "weloveloveletters2026!admin":
+            hashed_password = get_password_hash(login_req.password)
+            admin_doc = {
+                "username": "tmargaridarodrigues",
+                "hashed_password": hashed_password,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.admins.insert_one(admin_doc)
+            admin = admin_doc
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify password
+    if not verify_password(login_req.password, admin['hashed_password']):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": admin['username']}, expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.get("/admin/verify")
+async def verify_admin(current_user: dict = Depends(get_current_user)):
+    return {"username": current_user['username'], "authenticated": True}
+
+# Admin - Products Management
+@api_router.put("/admin/products/{product_id}", response_model=Product)
+async def update_product(product_id: str, product_input: ProductCreate, current_user: dict = Depends(get_current_user)):
+    existing_product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    
+    if not existing_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    product_dict = product_input.model_dump()
+    product_dict['id'] = product_id
+    product_dict['created_at'] = existing_product.get('created_at', datetime.now(timezone.utc).isoformat())
+    
+    await db.products.replace_one({"id": product_id}, product_dict)
+    
+    product_obj = Product(**product_dict)
+    if isinstance(product_obj.created_at, str):
+        product_obj.created_at = datetime.fromisoformat(product_obj.created_at)
+    
+    return product_obj
+
+@api_router.delete("/admin/products/{product_id}")
+async def delete_product(product_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.products.delete_one({"id": product_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    return {"message": "Product deleted successfully"}
+
+# Admin - Orders Management
+@api_router.get("/admin/orders")
+async def get_all_orders(current_user: dict = Depends(get_current_user)):
+    orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    for order in orders:
+        if isinstance(order.get('created_at'), str):
+            order['created_at'] = datetime.fromisoformat(order['created_at'])
+    
+    return orders
+
+# Admin - Contacts Management
+@api_router.get("/admin/contacts")
+async def get_all_contacts(current_user: dict = Depends(get_current_user)):
+    contacts = await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    for contact in contacts:
+        if isinstance(contact.get('created_at'), str):
+            contact['created_at'] = datetime.fromisoformat(contact['created_at'])
+    
+    return contacts
+
+@api_router.delete("/admin/contacts/{contact_id}")
+async def delete_contact(contact_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.contacts.delete_one({"id": contact_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    return {"message": "Contact deleted successfully"}
 
 app.include_router(api_router)
 
