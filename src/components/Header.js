@@ -29,7 +29,7 @@ const Header = () => {
           className="hover:opacity-70 transition-opacity flex items-center"
           data-testid="logo-link"
         >
-          <img src="/logo-v2.svg" alt="Love Letters" style={{ width: '150px', height: 'auto' }} />
+          <img src="/logo-v2.svg" alt="Love Letters" style={{ height: '45px', width: 'auto' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
