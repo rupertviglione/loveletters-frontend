@@ -10,7 +10,8 @@ module.exports = {
                 fontFamily: {
                         courier: ['Courier Prime', 'Courier New', 'monospace'],
                         mono: ['IBM Plex Mono', 'monospace'],
-                        serif: ['Source Serif 4', 'Georgia', 'serif']
+                        serif: ['Source Serif 4', 'Georgia', 'serif'],
+                        syne: ['Syne', 'sans-serif']
                 },
                 borderRadius: {
                         lg: 'var(--radius)',

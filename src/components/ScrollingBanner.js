@@ -8,7 +8,9 @@ const ScrollingBanner = () => {
   
   const text1 = t('WE LOVE LOVE LETTERS', 'WE LOVE LOVE LETTERS');
   const text2 = t('VER COLECÇÃO', 'VIEW COLLECTION');
-  const repeatedText = `${text1}     ${text2}     ${text1}     ${text2}     ${text1}     ${text2}     ${text1}     ${text2}     `;
+  
+  // More spacing and visual separator
+  const repeatedText = `${text1}     •     ${text2}     •     ${text1}     •     ${text2}     •     ${text1}     •     ${text2}     •     `;
 
   return (
     <Link to="/shop" className="scrolling-banner-wrapper">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,14 +10,25 @@ const Header = () => {
   const { language, toggleLanguage, t } = useLanguage();
   const { getItemCount } = useCart();
   const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
 
   const isActive = (path) => location.pathname === path;
   const isHomePage = location.pathname === '/';
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 100);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <header 
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isHomePage ? 'bg-transparent' : 'bg-background/95 backdrop-blur-sm border-b border-border'
+        scrolled || !isHomePage 
+          ? 'bg-background border-b border-border' 
+          : 'bg-transparent'
       }`} 
       data-testid="header"
     >
@@ -27,7 +38,7 @@ const Header = () => {
           className="hover:opacity-70 transition-opacity flex items-center gap-2"
           data-testid="logo-link"
         >
-          <img src="/logo-new.png" alt="Love Letters" className="h-7 md:h-9 w-auto" />
+          <img src="/logo.svg" alt="Love Letters" className="h-8 md:h-10 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -96,7 +107,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border px-4 py-3 flex justify-around bg-background/95 backdrop-blur-sm">
+      <nav className="md:hidden border-t border-border px-4 py-3 flex justify-around bg-background">
         <Link
           to="/"
           className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${

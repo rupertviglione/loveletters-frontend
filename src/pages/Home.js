@@ -32,7 +32,7 @@ const Home = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen" data-testid="home-page">
+    <div className="min-h-screen pb-20" data-testid="home-page">
       {/* Hero Section with Full Background Image */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <div className="absolute inset-0">
@@ -61,7 +61,7 @@ const Home = () => {
               transition={{ duration: 1, delay: 0.2 }}
               className="mb-12"
             >
-              <h1 className="font-courier font-bold text-5xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tight mb-6 text-white">
+              <h1 className="font-syne font-extrabold text-5xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tight mb-6 text-white">
                 We <span className="text-accent">love</span><br />
                 Love Letters.
               </h1>
@@ -131,12 +131,12 @@ const Home = () => {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-12 bg-secondary/20"
+          className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-12 bg-secondary/30"
         >
           <h2 className="font-serif italic text-xl md:text-2xl mb-4 text-muted-foreground">
             {t('Este é um poema de amor', 'This is a love poem')}
           </h2>
-          <h3 className="font-courier font-bold text-2xl md:text-3xl uppercase mb-6">
+          <h3 className="font-syne font-bold text-2xl md:text-3xl uppercase mb-6">
             {t('Manifesto', 'Manifesto')}
           </h3>
           <p className="font-serif text-base md:text-lg leading-relaxed">
@@ -149,7 +149,7 @@ const Home = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 md:py-24 px-4 md:px-8 lg:px-16 text-center bg-secondary/10 mb-16">
+      <section className="py-16 md:py-24 px-4 md:px-8 lg:px-16 text-center bg-secondary/20">
         <div className="max-w-4xl mx-auto">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -169,7 +169,7 @@ const Home = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="font-courier text-2xl md:text-3xl font-bold uppercase tracking-tight"
+            className="font-syne text-2xl md:text-3xl font-bold uppercase tracking-tight"
           >
             So, write that love letter.
           </motion.p>

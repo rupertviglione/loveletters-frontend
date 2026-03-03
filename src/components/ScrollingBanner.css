@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 40;
+  z-index: 30;
   display: block;
   text-decoration: none;
   cursor: pointer;
@@ -13,7 +13,7 @@
   background-color: hsl(var(--accent));
   overflow: hidden;
   white-space: nowrap;
-  padding: 1rem 0;
+  padding: 1.25rem 0;
   transition: transform 0.3s ease;
 }
 
@@ -23,14 +23,14 @@
 
 .scrolling-banner-content {
   display: inline-block;
-  animation: scroll-left 40s linear infinite;
+  animation: scroll-left 60s linear infinite;
 }
 
 .scrolling-banner-content span {
   font-family: 'Courier New', monospace;
   font-weight: 900;
   font-size: 1.5rem;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.3em;
   color: white;
   text-transform: uppercase;
   display: inline-block;
@@ -48,9 +48,10 @@
 @media (max-width: 768px) {
   .scrolling-banner-content span {
     font-size: 1rem;
+    letter-spacing: 0.2em;
   }
   
   .scrolling-banner {
-    padding: 0.75rem 0;
+    padding: 1rem 0;
   }
 }
