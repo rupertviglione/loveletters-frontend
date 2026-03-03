@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Package, ShoppingBag, Mail, Plus, Edit, Trash2 } from 'lucide-react';
 
@@ -15,21 +15,7 @@ const AdminDashboard = () => {
   const API_URL = process.env.REACT_APP_BACKEND_URL;
   const token = localStorage.getItem('admin_token');
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    verifyAuth();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'products') fetchProducts();
-    if (activeTab === 'orders') fetchOrders();
-    if (activeTab === 'contacts') fetchContacts();
-  }, [activeTab]);
-
-  const verifyAuth = async () => {
+  const verifyAuth = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/admin/verify`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -41,9 +27,9 @@ const AdminDashboard = () => {
     } catch (err) {
       navigate('/admin/login');
     }
-  };
+  }, [API_URL, token, navigate]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/products`);
@@ -54,9 +40,9 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/admin/orders`, {
@@ -69,9 +55,9 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, token]);
 
-  const fetchContacts = async () => {
+  const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/admin/contacts`, {
@@ -84,7 +70,21 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, token]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    verifyAuth();
+  }, [token, navigate, verifyAuth]);
+
+  useEffect(() => {
+    if (activeTab === 'products') fetchProducts();
+    if (activeTab === 'orders') fetchOrders();
+    if (activeTab === 'contacts') fetchContacts();
+  }, [activeTab, fetchProducts, fetchOrders, fetchContacts]);
 
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm('Tem a certeza que quer eliminar este produto?')) return;
