@@ -7,9 +7,9 @@ const Home = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen" data-testid="home-page">
+    <div className="min-h-screen overflow-x-hidden" data-testid="home-page">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-32">
+      <section className="relative min-h-screen flex items-center pt-24 md:pt-32">
         <div className="absolute inset-0">
           <img
             src="/img/hero-bg.png"
@@ -18,22 +18,23 @@ const Home = () => {
           />
         </div>
 
-        <div className="relative w-full px-4 md:px-8 lg:px-12 py-16 z-10">
+        <div className="relative w-full px-4 md:px-8 lg:px-12 py-8 md:py-16 z-10">
           <div className="max-w-7xl mx-auto">
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8 }}
-              className="font-serif text-xs md:text-sm uppercase tracking-widest text-muted-foreground mb-12"
+              className="font-serif text-xs md:text-sm uppercase tracking-widest text-muted-foreground mb-6 md:mb-12"
             >
               {t('Poesia que se veste', 'Poetry you can wear')}
             </motion.p>
 
+            {/* Hero text - responsive sizing for mobile */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.2 }}
-              className="font-syne font-extrabold text-6xl sm:text-7xl md:text-8xl lg:text-9xl uppercase leading-none tracking-tighter mb-16"
+              className="font-syne font-extrabold text-[2.75rem] sm:text-6xl md:text-8xl lg:text-9xl uppercase leading-[0.9] tracking-tighter mb-8 md:mb-16"
             >
               WE <span className="text-accent">LOVE</span><br />
               LOVE<br />
@@ -44,7 +45,7 @@ const Home = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="font-serif text-xl md:text-2xl italic text-foreground/80 mb-12 max-w-xl"
+              className="font-serif text-lg md:text-2xl italic text-foreground/80 mb-8 md:mb-12 max-w-xl"
             >
               {t('Sim, adoramos cartas de amor.', 'Yes, we love love letters.')}
             </motion.p>
@@ -57,7 +58,7 @@ const Home = () => {
             >
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 px-10 py-5 bg-foreground text-background hover:bg-foreground/90 transition-all duration-300 font-courier font-bold uppercase text-sm tracking-wider"
+                className="inline-flex items-center gap-2 px-6 md:px-10 py-4 md:py-5 bg-foreground text-background hover:bg-foreground/90 transition-all duration-300 font-courier font-bold uppercase text-xs md:text-sm tracking-wider"
                 data-testid="hero-cta"
               >
                 {t('Entrar na loja', 'Enter the shop')}
@@ -69,10 +70,10 @@ const Home = () => {
       </section>
 
       {/* THIS IS A LOVE POEM Section - SEM fundo branco */}
-      <section className="py-20 px-4 md:px-8 lg:px-16 bg-background">
+      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-16 bg-background">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div className="p-12 md:p-16 flex items-center justify-center aspect-square">
-            <h2 className="font-syne font-extrabold text-5xl sm:text-6xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tighter text-accent text-center">
+          <div className="p-6 md:p-16 flex items-center justify-center aspect-square">
+            <h2 className="font-syne font-extrabold text-4xl sm:text-5xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tighter text-accent text-center">
               THIS IS<br />
               A LOVE<br />
               POEM.
@@ -97,31 +98,31 @@ const Home = () => {
       </section>
 
       {/* Text Section */}
-      <section className="py-20 px-4 md:px-8 lg:px-16 bg-secondary/20 border-t border-border">
+      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-16 bg-secondary/20 border-t border-border">
         <div className="max-w-5xl mx-auto text-center">
-          <p className="font-serif text-xl md:text-2xl lg:text-3xl leading-relaxed italic text-foreground/70 mb-16">
+          <p className="font-serif text-lg md:text-2xl lg:text-3xl leading-relaxed italic text-foreground/70 mb-10 md:mb-16">
             {t(
               'E quando as palavras não parecem ser suficientes, ou em silêncio se diz tudo o que é verdadeiramente necessário, para cada uma destas nossas cartas — que esperamos que façam vossas —, escolhemos uma imagem que representa o ambiente que a inspirou.',
               'And when words don\'t seem to be enough, or in silence everything that is truly necessary is said, for each of these letters — which we hope will become yours — we choose an image that represents the environment that inspired it.'
             )}
           </p>
 
-          <h2 className="font-syne text-4xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight">
+          <h2 className="font-syne text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight">
             SO, WRITE THAT <span className="text-accent">LOVE<br/>LETTER.</span>
           </h2>
         </div>
       </section>
 
-      {/* Banner - ESPAÇO REDUZIDO */}
-      <div className="my-16">
+      {/* Banner - Mobile: faster animation, less space between text */}
+      <div className="my-10 md:my-16">
         <Link to="/shop" className="block">
-          <div className="bg-accent overflow-hidden py-4">
+          <div className="bg-accent overflow-hidden py-3 md:py-4">
             <div className="banner-scroll flex items-center">
-              <span className="inline-block whitespace-nowrap font-courier font-black text-xl md:text-2xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              <span className="inline-block whitespace-nowrap font-courier font-black text-base md:text-2xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
               </span>
-              <span className="inline-block whitespace-nowrap font-courier font-black text-xl md:text-2xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              <span className="inline-block whitespace-nowrap font-courier font-black text-base md:text-2xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WE LOVE LOVE LETTERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VER COLECÇÃO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
               </span>
             </div>
           </div>
@@ -135,6 +136,11 @@ const Home = () => {
         }
         .banner-scroll {
           animation: banner-scroll 30s linear infinite;
+        }
+        @media (max-width: 768px) {
+          .banner-scroll {
+            animation: banner-scroll 8s linear infinite;
+          }
         }
       `}</style>
     </div>

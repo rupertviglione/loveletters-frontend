@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProductCard from '@/components/ProductCard';
 import { motion } from 'framer-motion';
@@ -41,12 +40,12 @@ const Shop = () => {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-screen pt-32" data-testid="shop-page">
-      <div className="border-b border-border py-8 md:py-12 px-4 md:px-8 lg:px-12">
-        <h1 className="font-syne font-extrabold text-5xl md:text-7xl uppercase tracking-tight leading-none mb-6">
+    <div className="min-h-screen pt-24 md:pt-32 overflow-x-hidden" data-testid="shop-page">
+      <div className="border-b border-border py-6 md:py-12 px-4 md:px-8 lg:px-12">
+        <h1 className="font-syne font-extrabold text-4xl md:text-7xl uppercase tracking-tight leading-none mb-4 md:mb-6">
           {t('LOJA', 'SHOP')}
         </h1>
-        <p className="font-serif text-lg text-muted-foreground italic max-w-2xl">
+        <p className="font-serif text-base md:text-lg text-muted-foreground italic max-w-2xl">
           {t(
             'Usa o que sentes.',
             'Wear what you feel.'
@@ -54,13 +53,14 @@ const Shop = () => {
         </p>
       </div>
 
-      <div className="border-b border-border py-4 px-4 md:px-8 lg:px-12 overflow-x-auto">
-        <div className="flex gap-4 min-w-max">
+      {/* Filter buttons - scrollable on mobile but fits better */}
+      <div className="border-b border-border py-3 md:py-4 px-4 md:px-8 lg:px-12 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 md:gap-4 flex-wrap md:flex-nowrap">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-6 py-2 border uppercase tracking-widest text-xs font-bold transition-all duration-300 ${
+              className={`px-3 md:px-6 py-1.5 md:py-2 border uppercase tracking-wider md:tracking-widest text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap ${
                 selectedCategory === category.id
                   ? 'bg-accent text-white border-accent'
                   : 'bg-transparent border-border hover:border-accent hover:text-accent'
@@ -77,10 +77,10 @@ const Shop = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-secondary/30 border-b border-border py-6 px-4 md:px-8 lg:px-12"
+          className="bg-secondary/30 border-b border-border py-4 md:py-6 px-4 md:px-8 lg:px-12"
         >
           <div className="max-w-3xl">
-            <h2 className="font-courier font-bold text-lg md:text-xl uppercase mb-3">
+            <h2 className="font-courier font-bold text-base md:text-xl uppercase mb-2 md:mb-3">
               {t('Rascunhos', 'Drafts')}
             </h2>
             <p className="font-serif text-sm md:text-base leading-relaxed">
@@ -113,29 +113,15 @@ const Shop = () => {
         </div>
       )}
 
-      {/* Banner at bottom - NOT fixed, with margin */}
-      <div className="my-16">
-        <Link to="/shop" className="block">
-          <div className="bg-accent overflow-hidden py-6">
-            <div className="scrolling-banner-content flex items-center">
-              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
-              </span>
-              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
-              </span>
-            </div>
-          </div>
-        </Link>
-      </div>
+      {/* NO BANNER in Shop page - removed as requested */}
 
       <style jsx>{`
-        @keyframes scroll-banner {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
         }
-        .scrolling-banner-content {
-          animation: scroll-banner 60s linear infinite;
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </div>

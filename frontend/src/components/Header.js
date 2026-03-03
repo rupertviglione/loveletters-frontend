@@ -23,13 +23,18 @@ const Header = () => {
       data-testid="header"
       style={{ padding: '8px 0' }}
     >
-      <div className="px-4 md:px-8 lg:px-12 flex items-center justify-between" style={{ minHeight: 'auto' }}>
+      <div className="px-3 md:px-8 lg:px-12 flex items-center justify-between" style={{ minHeight: 'auto' }}>
         <Link 
           to="/" 
-          className="hover:opacity-70 transition-opacity flex items-center"
+          className="hover:opacity-70 transition-opacity flex items-center flex-shrink-0"
           data-testid="logo-link"
         >
-          <img src="/logo-v2.svg" alt="Love Letters" style={{ height: '30px', width: 'auto' }} />
+          {/* Mobile: smaller logo, Desktop: normal size */}
+          <img 
+            src="/logo-v2.svg" 
+            alt="Love Letters" 
+            className="h-5 md:h-[30px] w-auto"
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -62,19 +67,19 @@ const Header = () => {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <button
             onClick={toggleTheme}
-            className="p-2 hover:text-accent transition-all duration-300"
+            className="p-1.5 md:p-2 hover:text-accent transition-all duration-300"
             aria-label={t('Alternar tema', 'Toggle theme')}
             data-testid="theme-toggle"
           >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            {theme === 'light' ? <Moon size={16} className="md:w-[18px] md:h-[18px]" /> : <Sun size={16} className="md:w-[18px] md:h-[18px]" />}
           </button>
 
           <button
             onClick={toggleLanguage}
-            className="font-mono font-bold text-xs uppercase tracking-widest hover:text-accent transition-all duration-300"
+            className="font-mono font-bold text-[10px] md:text-xs uppercase tracking-wider md:tracking-widest hover:text-accent transition-all duration-300"
             data-testid="language-toggle"
           >
             {language.toUpperCase()}
@@ -82,13 +87,13 @@ const Header = () => {
 
           <Link
             to="/cart"
-            className="relative p-2 hover:text-accent transition-all duration-300"
+            className="relative p-1.5 md:p-2 hover:text-accent transition-all duration-300"
             data-testid="cart-link"
           >
-            <ShoppingCart size={18} />
+            <ShoppingCart size={16} className="md:w-[18px] md:h-[18px]" />
             {getItemCount() > 0 && (
               <span 
-                className="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center font-mono"
+                className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1 bg-accent text-white text-[10px] md:text-xs font-bold rounded-full w-3.5 h-3.5 md:w-4 md:h-4 flex items-center justify-center font-mono"
                 data-testid="cart-count"
               >
                 {getItemCount()}
@@ -98,10 +103,11 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border/30 px-4 flex justify-around bg-background/40" style={{ padding: '2px 16px' }}>
+      {/* Mobile navigation - compact and centered */}
+      <nav className="md:hidden border-t border-border/30 flex justify-center gap-6 bg-background/40 py-1.5 px-2">
         <Link
           to="/"
-          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+          className={`font-courier font-bold uppercase text-[10px] tracking-wide transition-all duration-300 ${
             isActive('/') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
@@ -109,7 +115,7 @@ const Header = () => {
         </Link>
         <Link
           to="/shop"
-          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+          className={`font-courier font-bold uppercase text-[10px] tracking-wide transition-all duration-300 ${
             isActive('/shop') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
@@ -117,7 +123,7 @@ const Header = () => {
         </Link>
         <Link
           to="/contact"
-          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+          className={`font-courier font-bold uppercase text-[10px] tracking-wide transition-all duration-300 ${
             isActive('/contact') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
