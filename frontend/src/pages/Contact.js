@@ -109,7 +109,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden" data-testid="contact-page" style={{ paddingTop: '80px' }}>
+    <div className="min-h-screen bg-background" data-testid="contact-page" style={{ paddingTop: '80px', overflowX: 'hidden' }}>
       {/* Title - constrained to viewport */}
       <div className="px-4 md:px-8 mb-0">
         <h1 className="font-syne font-extrabold text-3xl md:text-7xl uppercase tracking-tight leading-none">
@@ -124,30 +124,34 @@ const Contact = () => {
         className="relative w-full"
       >
         {/* Typewriter with form overlay - works for both mobile and desktop */}
-        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4" style={{ marginTop: '10px' }}>
+        <div className="relative w-full max-w-4xl mx-auto md:px-4">
           <div 
-            className="relative w-full overflow-x-hidden" 
+            className="relative" 
             style={{ 
               filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
             }}
           >
-            {/* Typewriter image - scaled up on mobile to fill more space, only clip sides */}
+            {/* Typewriter image - wider on mobile using negative margins */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
-              className="w-full h-auto object-contain md:scale-100 scale-150 origin-top"
-              style={{ filter: 'brightness(1.02) contrast(0.98)' }}
+              className="h-auto object-contain w-full md:w-full"
+              style={{ 
+                filter: 'brightness(1.02) contrast(0.98)',
+                width: '130%',
+                marginLeft: '-15%'
+              }}
             />
             
-            {/* Form positioned on the paper - adjusted for mobile zoom */}
+            {/* Form positioned on the paper - adjusted for wider image */}
             <form
               onSubmit={handleSubmit}
               onKeyDown={handleKeyDown}
               className="absolute flex flex-col"
               style={{
-                top: '18%',
-                left: '32%',
-                right: '32%',
+                top: '14%',
+                left: '30%',
+                right: '30%',
                 gap: 'clamp(4px, 1vw, 12px)'
               }}
               data-testid="contact-form"
