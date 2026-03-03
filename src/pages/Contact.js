@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -109,10 +110,10 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 bg-background pb-32" data-testid="contact-page">
+    <div className="min-h-screen pt-32 bg-background" data-testid="contact-page">
       <div className="py-6 md:py-8 px-4 md:px-8 mb-6">
-        <h1 className="font-syne font-bold text-4xl md:text-6xl uppercase tracking-tight leading-none">
-          {t('Contacto', 'Contact')}
+        <h1 className="font-syne font-extrabold text-5xl md:text-7xl uppercase tracking-tight leading-none">
+          {t('CONTACTO', 'CONTACT')}
         </h1>
       </div>
 
@@ -123,7 +124,7 @@ const Contact = () => {
         className="relative w-full"
       >
         <div className="relative w-full max-w-4xl mx-auto px-4">
-          <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
+          <div className="relative" style={{ aspectRatio: '1/1' }}>
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
@@ -225,7 +226,31 @@ const Contact = () => {
         </p>
       </motion.div>
 
-      <div className="h-24"></div>
+      {/* Banner at bottom - NOT fixed, with margin */}
+      <div className="my-16">
+        <Link to="/shop" className="block">
+          <div className="bg-accent overflow-hidden py-6">
+            <div className="scrolling-banner-content flex items-center">
+              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              </span>
+              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              </span>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <style jsx>{`
+        @keyframes scroll-banner {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .scrolling-banner-content {
+          animation: scroll-banner 60s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

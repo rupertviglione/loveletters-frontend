@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProductCard from '@/components/ProductCard';
 import { motion } from 'framer-motion';
@@ -40,12 +41,12 @@ const Shop = () => {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32 pb-32" data-testid="shop-page">
+    <div className="min-h-screen pt-32" data-testid="shop-page">
       <div className="border-b border-border py-8 md:py-12 px-4 md:px-8 lg:px-12">
-        <h1 className="font-archivo font-black text-4xl md:text-6xl tracking-tighter uppercase leading-none mb-6">
-          {t('Loja', 'Shop')}
+        <h1 className="font-syne font-extrabold text-5xl md:text-7xl uppercase tracking-tight leading-none mb-6">
+          {t('LOJA', 'SHOP')}
         </h1>
-        <p className="font-fraunces text-lg text-muted-foreground italic max-w-2xl">
+        <p className="font-serif text-lg text-muted-foreground italic max-w-2xl">
           {t(
             'Usa o que sentes.',
             'Wear what you feel.'
@@ -72,7 +73,6 @@ const Shop = () => {
         </div>
       </div>
 
-      {/* Rascunhos Info Banner */}
       {selectedCategory === 'rascunhos' && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -107,12 +107,37 @@ const Shop = () => {
 
       {!loading && products.length === 0 && (
         <div className="text-center py-24 px-4">
-          <p className="font-fraunces text-xl text-muted-foreground italic">
+          <p className="font-serif text-xl text-muted-foreground italic">
             {t('Nenhum produto encontrado.', 'No products found.')}
           </p>
         </div>
       )}
 
+      {/* Banner at bottom - NOT fixed, with margin */}
+      <div className="my-16">
+        <Link to="/shop" className="block">
+          <div className="bg-accent overflow-hidden py-6">
+            <div className="scrolling-banner-content flex items-center">
+              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              </span>
+              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              </span>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <style jsx>{`
+        @keyframes scroll-banner {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .scrolling-banner-content {
+          animation: scroll-banner 60s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

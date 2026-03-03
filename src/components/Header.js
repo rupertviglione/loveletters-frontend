@@ -13,7 +13,6 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
 
   const isActive = (path) => location.pathname === path;
-  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,20 +24,16 @@ const Header = () => {
 
   return (
     <header 
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled || !isHomePage 
-          ? 'bg-background border-b border-border' 
-          : 'bg-background'
-      }`} 
+      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background border-b border-border"
       data-testid="header"
     >
-      <div className="px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between">
+      <div className="px-4 md:px-8 lg:px-12 py-5 flex items-center justify-between">
         <Link 
           to="/" 
           className="hover:opacity-70 transition-opacity flex items-center gap-2"
           data-testid="logo-link"
         >
-          <img src="/logo.svg" alt="Love Letters" className="h-10 md:h-12 w-auto" />
+          <img src="/logo.svg" alt="Love Letters" className="h-14 md:h-16 lg:h-20 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -47,9 +42,9 @@ const Header = () => {
             className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
               isActive('/') ? 'text-accent' : 'hover:text-accent'
             }`}
-            data-testid="nav-about"
+            data-testid="nav-sobre"
           >
-            {t('Início', 'Home')}
+            {t('Sobre', 'About')}
           </Link>
           <Link
             to="/shop"
@@ -59,15 +54,6 @@ const Header = () => {
             data-testid="nav-shop"
           >
             {t('Loja', 'Shop')}
-          </Link>
-          <Link
-            to="/about"
-            className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
-              isActive('/about') ? 'text-accent' : 'hover:text-accent'
-            }`}
-            data-testid="nav-about-page"
-          >
-            {t('Sobre', 'About')}
           </Link>
           <Link
             to="/contact"
@@ -123,7 +109,7 @@ const Header = () => {
             isActive('/') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
-          {t('Início', 'Home')}
+          {t('Sobre', 'About')}
         </Link>
         <Link
           to="/shop"
@@ -132,14 +118,6 @@ const Header = () => {
           }`}
         >
           {t('Loja', 'Shop')}
-        </Link>
-        <Link
-          to="/about"
-          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
-            isActive('/about') ? 'text-accent' : 'hover:text-accent'
-          }`}
-        >
-          {t('Sobre', 'About')}
         </Link>
         <Link
           to="/contact"
