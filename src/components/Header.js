@@ -21,15 +21,15 @@ const Header = () => {
     <header 
       className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/40 backdrop-blur-sm border-b border-border/30"
       data-testid="header"
-      style={{ padding: '4px 0' }}
+      style={{ padding: '2px 0' }}
     >
-      <div className="px-4 md:px-8 lg:px-12 flex items-center justify-between">
+      <div className="px-4 md:px-8 lg:px-12 flex items-center justify-between" style={{ minHeight: 'auto' }}>
         <Link 
           to="/" 
           className="hover:opacity-70 transition-opacity flex items-center"
           data-testid="logo-link"
         >
-          <img src="/logo-v2.svg" alt="Love Letters" style={{ width: '200px', height: 'auto' }} />
+          <img src="/logo-v2.svg" alt="Love Letters" style={{ width: '150px', height: 'auto' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -98,7 +98,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border/30 px-4 flex justify-around bg-background/40" style={{ padding: '4px 16px' }}>
+      <nav className="md:hidden border-t border-border/30 px-4 flex justify-around bg-background/40" style={{ padding: '2px 16px' }}>
         <Link
           to="/"
           className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
