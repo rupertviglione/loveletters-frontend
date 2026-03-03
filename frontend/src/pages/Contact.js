@@ -122,21 +122,20 @@ const Contact = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative w-full"
-        style={{ marginTop: '-5px' }}
       >
         {/* Typewriter with form overlay - works for both mobile and desktop */}
-        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4 overflow-hidden">
+        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4" style={{ marginTop: '10px' }}>
           <div 
-            className="relative w-full" 
+            className="relative w-full overflow-x-hidden" 
             style={{ 
               filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
             }}
           >
-            {/* Typewriter image - scaled up on mobile to fill more space */}
+            {/* Typewriter image - scaled up on mobile to fill more space, only clip sides */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
-              className="w-full h-auto object-contain md:scale-100 scale-150 origin-center"
+              className="w-full h-auto object-contain md:scale-100 scale-150 origin-top"
               style={{ filter: 'brightness(1.02) contrast(0.98)' }}
             />
             
