@@ -28,7 +28,7 @@ const Header = () => {
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         scrolled || !isHomePage 
           ? 'bg-background border-b border-border' 
-          : 'bg-transparent'
+          : 'bg-background'
       }`} 
       data-testid="header"
     >
@@ -38,7 +38,7 @@ const Header = () => {
           className="hover:opacity-70 transition-opacity flex items-center gap-2"
           data-testid="logo-link"
         >
-          <img src="/logo.svg" alt="Love Letters" className="h-8 md:h-10 w-auto" />
+          <img src="/logo.svg" alt="Love Letters" className="h-10 md:h-12 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -49,7 +49,7 @@ const Header = () => {
             }`}
             data-testid="nav-about"
           >
-            {t('Sobre', 'About')}
+            {t('Início', 'Home')}
           </Link>
           <Link
             to="/shop"
@@ -59,6 +59,15 @@ const Header = () => {
             data-testid="nav-shop"
           >
             {t('Loja', 'Shop')}
+          </Link>
+          <Link
+            to="/about"
+            className={`font-courier font-bold uppercase text-sm tracking-wider transition-all duration-300 ${
+              isActive('/about') ? 'text-accent' : 'hover:text-accent'
+            }`}
+            data-testid="nav-about-page"
+          >
+            {t('Sobre', 'About')}
           </Link>
           <Link
             to="/contact"
@@ -114,7 +123,7 @@ const Header = () => {
             isActive('/') ? 'text-accent' : 'hover:text-accent'
           }`}
         >
-          {t('Sobre', 'About')}
+          {t('Início', 'Home')}
         </Link>
         <Link
           to="/shop"
@@ -123,6 +132,14 @@ const Header = () => {
           }`}
         >
           {t('Loja', 'Shop')}
+        </Link>
+        <Link
+          to="/about"
+          className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
+            isActive('/about') ? 'text-accent' : 'hover:text-accent'
+          }`}
+        >
+          {t('Sobre', 'About')}
         </Link>
         <Link
           to="/contact"

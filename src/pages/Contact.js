@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import ScrollingBanner from '@/components/ScrollingBanner';
 
 const API = process.env.REACT_APP_BACKEND_URL 
   ? `${process.env.REACT_APP_BACKEND_URL}/api`
@@ -110,9 +109,9 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen pt-16 md:pt-20 bg-background pb-24" data-testid="contact-page">
-      <div className="py-4 md:py-6 px-4 md:px-8 mb-6">
-        <h1 className="font-syne font-bold text-3xl md:text-5xl uppercase tracking-tight leading-none">
+    <div className="min-h-screen pt-24 bg-background pb-32" data-testid="contact-page">
+      <div className="py-6 md:py-8 px-4 md:px-8 mb-6">
+        <h1 className="font-syne font-bold text-4xl md:text-6xl uppercase tracking-tight leading-none">
           {t('Contacto', 'Contact')}
         </h1>
       </div>
@@ -123,90 +122,84 @@ const Contact = () => {
         transition={{ duration: 0.6 }}
         className="relative w-full"
       >
-        <div className="relative w-full max-w-5xl mx-auto px-4">
-          <div className="relative">
-            <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: '16/10' }}>
-              <img
-                src="/img/contacto.png"
-                alt="Typewriter"
-                className="w-full h-full object-cover"
+        <div className="relative w-full max-w-4xl mx-auto px-4">
+          <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
+            <img
+              src="/img/maquina-nova.png"
+              alt="Typewriter"
+              className="w-full h-full object-contain"
+            />
+            
+            <form
+              onSubmit={handleSubmit}
+              onKeyDown={handleKeyDown}
+              className="absolute flex flex-col"
+              style={{
+                top: '12%',
+                left: '28%',
+                right: '28%',
+                gap: 'clamp(6px, 1.2vw, 12px)'
+              }}
+              data-testid="contact-form"
+            >
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
                 style={{ 
-                  objectPosition: '50% 32%',
-                  transform: 'scale(1.4)'
+                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
+                  padding: 'clamp(3px, 0.5vw, 6px) 0',
+                  lineHeight: '1.4'
                 }}
+                placeholder={t('Nome', 'Name')}
+                data-testid="contact-name"
               />
-              
-              <form
-                onSubmit={handleSubmit}
-                onKeyDown={handleKeyDown}
-                className="absolute flex flex-col"
-                style={{
-                  top: '20%',
-                  left: '33%',
-                  right: '33%',
-                  gap: 'clamp(5px, 1vw, 10px)'
+
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
+                style={{ 
+                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
+                  padding: 'clamp(3px, 0.5vw, 6px) 0',
+                  lineHeight: '1.4'
                 }}
-                data-testid="contact-form"
+                placeholder="Email"
+                data-testid="contact-email"
+              />
+
+              <textarea
+                required
+                value={formData.message}
+                onChange={(e) => handleInputChange('message', e.target.value)}
+                rows={5}
+                className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none"
+                style={{ 
+                  fontSize: 'clamp(10px, 1.3vw, 15px)', 
+                  padding: 'clamp(3px, 0.5vw, 6px) 0',
+                  lineHeight: '1.6'
+                }}
+                placeholder={t('Mensagem', 'Message')}
+                data-testid="contact-message"
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left"
+                style={{ 
+                  fontSize: 'clamp(9px, 1.1vw, 13px)',
+                  marginTop: 'clamp(4px, 0.8vw, 10px)'
+                }}
+                data-testid="contact-submit"
               >
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/10 focus:border-black/20 focus:outline-none font-mono text-black/90 placeholder:text-black/25"
-                  style={{ 
-                    fontSize: 'clamp(9px, 1.1vw, 13px)', 
-                    padding: 'clamp(2px, 0.4vw, 5px) 0',
-                    lineHeight: '1.3'
-                  }}
-                  placeholder={t('Nome', 'Name')}
-                  data-testid="contact-name"
-                />
-
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/10 focus:border-black/20 focus:outline-none font-mono text-black/90 placeholder:text-black/25"
-                  style={{ 
-                    fontSize: 'clamp(9px, 1.1vw, 13px)', 
-                    padding: 'clamp(2px, 0.4vw, 5px) 0',
-                    lineHeight: '1.3'
-                  }}
-                  placeholder="Email"
-                  data-testid="contact-email"
-                />
-
-                <textarea
-                  required
-                  value={formData.message}
-                  onChange={(e) => handleInputChange('message', e.target.value)}
-                  rows={5}
-                  className="w-full bg-transparent border-0 focus:outline-none font-mono text-black/90 placeholder:text-black/25 resize-none"
-                  style={{ 
-                    fontSize: 'clamp(9px, 1.1vw, 13px)', 
-                    padding: 'clamp(2px, 0.4vw, 5px) 0',
-                    lineHeight: '1.5'
-                  }}
-                  placeholder={t('Mensagem', 'Message')}
-                  data-testid="contact-message"
-                />
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full font-mono text-black/50 hover:text-accent transition-colors disabled:opacity-30 text-left"
-                  style={{ 
-                    fontSize: 'clamp(8px, 1vw, 12px)',
-                    marginTop: 'clamp(3px, 0.6vw, 8px)'
-                  }}
-                  data-testid="contact-submit"
-                >
-                  {loading ? '...' : `[${t('enviar', 'send')}]`}
-                </button>
-              </form>
-            </div>
+                {loading ? '...' : `[${t('enviar', 'send')}]`}
+              </button>
+            </form>
           </div>
         </div>
 
@@ -217,14 +210,14 @@ const Contact = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed bottom-24 right-8 bg-accent text-white px-6 py-3 rounded-full font-courier font-bold text-lg shadow-2xl z-50"
+              className="fixed bottom-32 right-8 bg-accent text-white px-6 py-3 rounded-full font-courier font-bold text-lg shadow-2xl z-50"
             >
               {pressedKey === ' ' ? '␣' : pressedKey.toUpperCase()}
             </motion.div>
           )}
         </AnimatePresence>
 
-        <p className="text-center font-serif text-xs md:text-sm italic text-muted-foreground mt-8 px-4">
+        <p className="text-center font-serif text-sm md:text-base italic text-muted-foreground mt-8 px-4">
           {t(
             'Escreva-nos. As suas palavras são importantes.',
             'Write to us. Your words matter.'
@@ -232,7 +225,7 @@ const Contact = () => {
         </p>
       </motion.div>
 
-      <ScrollingBanner />
+      <div className="h-24"></div>
     </div>
   );
 };
