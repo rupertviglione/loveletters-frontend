@@ -68,30 +68,32 @@ const Home = () => {
         </div>
       </section>
 
+      {/* THIS IS A LOVE POEM Section */}
+      <section className="py-32 px-4 md:px-8 lg:px-16 bg-white text-center">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-syne font-extrabold text-6xl sm:text-7xl md:text-8xl lg:text-9xl uppercase leading-none tracking-tighter text-accent">
+            THIS IS<br />
+            A LOVE<br />
+            POEM.
+          </h2>
+        </div>
+      </section>
+
       {/* About Content */}
       <section className="py-20 px-4 md:px-8 lg:px-16 bg-background">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <img
-              src="/img/tote-o-poema-3.webp"
-              alt="Love Letters"
-              className="w-full h-auto rounded-lg"
-            />
-          </div>
-          <div className="space-y-6 font-serif text-base md:text-lg leading-relaxed">
-            <p>
-              {t(
-                'A Love Letters nasceu pelo desejo de recuperar e renovar a magia de escrever — e receber — cartas de amor.',
-                'Love Letters was born from the desire to recover and renew the magic of writing — and receiving — love letters.'
-              )}
-            </p>
-            <p>
-              {t(
-                'E, sim, as nossas cartas têm uma forma diferente. São para usar junto ao peito, coladas à pele, são para beijar o ombro, para vestir paredes.',
-                'And yes, our letters have a different form. They are meant to be worn close to the heart, against the skin, to kiss the shoulder, to dress walls.'
-              )}
-            </p>
-          </div>
+        <div className="max-w-4xl mx-auto space-y-8 font-serif text-lg md:text-xl leading-relaxed text-center">
+          <p>
+            {t(
+              'A Love Letters nasceu pelo desejo de recuperar e renovar a magia de escrever — e receber — cartas de amor.',
+              'Love Letters was born from the desire to recover and renew the magic of writing — and receiving — love letters.'
+            )}
+          </p>
+          <p>
+            {t(
+              'E, sim, as nossas cartas têm uma forma diferente. São para usar junto ao peito, coladas à pele, são para beijar o ombro, para vestir paredes.',
+              'And yes, our letters have a different form. They are meant to be worn close to the heart, against the skin, to kiss the shoulder, to dress walls.'
+            )}
+          </p>
         </div>
       </section>
 
@@ -111,16 +113,16 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Banner at bottom - NOT fixed, with margin */}
+      {/* Banner at bottom - NOT fixed, with margin, FASTER, TALLER SPACING */}
       <div className="my-16">
         <Link to="/shop" className="block">
-          <div className="bg-accent overflow-hidden py-6">
+          <div className="bg-accent overflow-hidden py-4">
             <div className="scrolling-banner-content flex items-center">
-              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              <span className="inline-block whitespace-nowrap font-courier font-black text-xl md:text-2xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                                                                   VER COLECÇÃO                                                                                   WE LOVE LOVE LETTERS                                                                                   VER COLECÇÃO                                                                                   
               </span>
-              <span className="inline-block whitespace-nowrap font-courier font-black text-2xl md:text-3xl tracking-widest text-white uppercase">
-                WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             WE LOVE LOVE LETTERS                                 VER COLECÇÃO                             
+              <span className="inline-block whitespace-nowrap font-courier font-black text-xl md:text-2xl tracking-widest text-white uppercase">
+                WE LOVE LOVE LETTERS                                                                                   VER COLECÇÃO                                                                                   WE LOVE LOVE LETTERS                                                                                   VER COLECÇÃO                                                                                   
               </span>
             </div>
           </div>
@@ -133,7 +135,7 @@ const Home = () => {
           100% { transform: translateX(-50%); }
         }
         .scrolling-banner-content {
-          animation: scroll-banner 60s linear infinite;
+          animation: scroll-banner 30s linear infinite;
         }
       `}</style>
     </div>

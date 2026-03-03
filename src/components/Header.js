@@ -24,16 +24,16 @@ const Header = () => {
 
   return (
     <header 
-      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background border-b border-border"
+      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/70 backdrop-blur-md border-b border-border/50"
       data-testid="header"
     >
-      <div className="px-4 md:px-8 lg:px-12 py-5 flex items-center justify-between">
+      <div className="px-4 md:px-8 lg:px-12 py-3 flex items-center justify-between">
         <Link 
           to="/" 
           className="hover:opacity-70 transition-opacity flex items-center gap-2"
           data-testid="logo-link"
         >
-          <img src="/logo.svg" alt="Love Letters" className="h-14 md:h-16 lg:h-20 w-auto" />
+          <img src="/logo.svg" alt="Love Letters" className="h-16 md:h-20 lg:h-24 w-auto" style={{ maxWidth: '300px' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -102,7 +102,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border px-4 py-3 flex justify-around bg-background">
+      <nav className="md:hidden border-t border-border/50 px-4 py-2 flex justify-around bg-background/70">
         <Link
           to="/"
           className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
