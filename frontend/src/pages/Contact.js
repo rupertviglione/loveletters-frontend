@@ -124,19 +124,23 @@ const Contact = () => {
         className="relative w-full"
       >
         {/* Typewriter with form overlay - works for both mobile and desktop */}
-        <div className="relative w-full md:max-w-4xl md:mx-auto md:px-4">
+        <div className="relative w-full md:max-w-4xl md:mx-auto md:px-4 overflow-hidden">
           <div 
-            className="relative" 
+            className="relative flex justify-center" 
             style={{ 
               filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
             }}
           >
-            {/* Typewriter image - full width */}
+            {/* Typewriter image - larger on mobile to fill space better */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
-              className="w-full h-auto object-contain"
-              style={{ filter: 'brightness(1.02) contrast(0.98)' }}
+              className="h-auto object-contain"
+              style={{ 
+                filter: 'brightness(1.02) contrast(0.98)',
+                width: '120%',
+                maxWidth: '120%'
+              }}
             />
             
             {/* Form positioned on the paper */}
