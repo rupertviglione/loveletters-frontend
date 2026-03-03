@@ -125,7 +125,7 @@ const Contact = () => {
         style={{ marginTop: '-5px' }}
       >
         {/* Typewriter with form overlay - works for both mobile and desktop */}
-        <div className="relative w-full max-w-4xl mx-auto px-1 md:px-4">
+        <div className="relative w-full max-w-4xl mx-auto px-0 md:px-4">
           <div 
             className="relative w-full" 
             style={{ 
