@@ -10,30 +10,25 @@ const Header = () => {
   const { language, toggleLanguage, t } = useLanguage();
   const { getItemCount } = useCart();
   const location = useLocation();
-  const [scrolled, setScrolled] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <header 
-      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/70 backdrop-blur-md border-b border-border/50"
+      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/40 backdrop-blur-sm border-b border-border/30"
       data-testid="header"
     >
-      <div className="px-4 md:px-8 lg:px-12 py-3 flex items-center justify-between">
+      <div className="px-4 md:px-8 lg:px-12 py-2 flex items-center justify-between">
         <Link 
           to="/" 
-          className="hover:opacity-70 transition-opacity flex items-center gap-2"
+          className="hover:opacity-70 transition-opacity flex items-center"
           data-testid="logo-link"
         >
-          <img src="/logo.svg" alt="Love Letters" className="h-16 md:h-20 lg:h-24 w-auto" style={{ maxWidth: '300px' }} />
+          <img src="/logo.svg" alt="Love Letters" className="h-20 md:h-28 lg:h-32 w-auto" style={{ maxWidth: '400px' }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -102,7 +97,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="md:hidden border-t border-border/50 px-4 py-2 flex justify-around bg-background/70">
+      <nav className="md:hidden border-t border-border/30 px-4 py-2 flex justify-around bg-background/40">
         <Link
           to="/"
           className={`font-courier font-bold uppercase text-xs tracking-wider transition-all duration-300 ${
