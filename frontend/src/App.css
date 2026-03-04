@@ -14,6 +14,7 @@ html {
 body {
   overflow-x: hidden;
   max-width: 100vw;
+  line-height: 1.6;
 }
 
 /* Prevent horizontal scroll on all pages */
@@ -33,6 +34,47 @@ main {
 
 main {
   flex: 1;
+}
+
+/* ===========================================
+   TYPOGRAPHY HIERARCHY
+   =========================================== */
+
+/* H1 - Hero titles: 56-64px */
+.font-syne {
+  letter-spacing: -0.02em;
+}
+
+/* Editorial text - better line height */
+.font-serif {
+  line-height: 1.7;
+}
+
+/* Mono for prices/metadata only */
+.font-mono {
+  letter-spacing: 0.02em;
+}
+
+/* ===========================================
+   LAYOUT & SPACING
+   =========================================== */
+
+/* Max content width */
+.max-w-7xl {
+  max-width: 1200px;
+}
+
+/* Section spacing */
+section {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+
+@media (max-width: 768px) {
+  section {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
 }
 
 /* Custom scrollbar */

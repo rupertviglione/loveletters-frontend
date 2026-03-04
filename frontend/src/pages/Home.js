@@ -75,9 +75,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* THIS IS A LOVE POEM Section - SEM fundo branco */}
-      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-16 bg-background">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+      {/* THIS IS A LOVE POEM Section - Improved spacing */}
+      <section className="py-20 md:py-32 px-4 md:px-8 lg:px-16 bg-background">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
           <div className="p-6 md:p-16 flex items-center justify-center aspect-square">
             <h2 className="font-syne font-extrabold text-4xl sm:text-5xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tighter text-accent text-center">
               THIS IS<br />
@@ -86,7 +86,7 @@ const Home = () => {
             </h2>
           </div>
           
-          <div className="space-y-6 font-serif text-base md:text-lg leading-relaxed">
+          <div className="space-y-8 font-serif text-lg md:text-xl leading-relaxed text-foreground/80">
             <p>
               {t(
                 'A Love Letters nasceu pelo desejo de recuperar e renovar a magia de escrever — e receber — cartas de amor.',
@@ -103,17 +103,17 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Text Section */}
-      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-16 bg-secondary/20 border-t border-border">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="font-serif text-lg md:text-2xl lg:text-3xl leading-relaxed italic text-foreground/70 mb-10 md:mb-16">
+      {/* Text Section - More breathing room */}
+      <section className="py-20 md:py-32 px-4 md:px-8 lg:px-16 bg-secondary/20 border-t border-border">
+        <div className="max-w-[900px] mx-auto text-center">
+          <p className="font-serif text-xl md:text-2xl lg:text-3xl leading-relaxed italic text-foreground/70 mb-12 md:mb-20">
             {t(
               'E quando as palavras não parecem ser suficientes, ou em silêncio se diz tudo o que é verdadeiramente necessário, para cada uma destas nossas cartas — que esperamos que façam vossas —, escolhemos uma imagem que representa o ambiente que a inspirou.',
               'And when words don\'t seem to be enough, or in silence everything that is truly necessary is said, for each of these letters — which we hope will become yours — we choose an image that represents the environment that inspired it.'
             )}
           </p>
 
-          <h2 className="font-syne text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight">
+          <h2 className="font-syne text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight leading-tight">
             SO, WRITE THAT <span className="text-accent">LOVE<br/>LETTER.</span>
           </h2>
         </div>
