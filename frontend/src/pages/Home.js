@@ -2,12 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
+import SEO from '@/components/SEO';
 
 const Home = () => {
   const { t } = useLanguage();
 
   return (
     <div className="min-h-screen overflow-x-hidden" data-testid="home-page">
+      <SEO 
+        title={null}
+        description="Love Letters transforma cartas de amor em objectos que podes vestir. Poesia que se veste, merchandising poético independente."
+        url="/"
+      />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-24 md:pt-32">
         <div className="absolute inset-0">

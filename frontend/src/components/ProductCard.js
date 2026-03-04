@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 const ProductCard = ({ product }) => {
   const { language, t } = useLanguage();
   const { addItem } = useCart();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const title = language === 'pt' ? product.title_pt : product.title_en;
   const hasVariants = product.variants && (product.variants.sizes || product.variants.colors);
@@ -28,14 +29,22 @@ const ProductCard = ({ product }) => {
     >
       <Link to={`/shop/${product.id}`} className="block">
         <div className="aspect-square overflow-hidden bg-muted border-b border-border p-4">
+          {/* Placeholder while loading */}
+          {!imageLoaded && (
+            <div className="w-full h-full flex items-center justify-center bg-muted animate-pulse">
+              <div className="w-12 h-12 rounded-full border-2 border-muted-foreground/30"></div>
+            </div>
+          )}
           <img
             src={product.images[0]}
             alt={title}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
         </div>
 
-        <div className="p-4 space-y-2">
+        <div className="p-4 md:p-6 space-y-2">
           <h3 className="font-courier font-bold text-base tracking-tight leading-tight">
             {title}
           </h3>

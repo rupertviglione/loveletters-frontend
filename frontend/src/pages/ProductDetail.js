@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -78,6 +79,13 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen pt-24 md:pt-32" data-testid="product-detail-page">
+      <SEO 
+        title={title}
+        description={description}
+        image={product.images[0]}
+        url={`/shop/${product.id}`}
+        type="product"
+      />
       <div className="px-4 md:px-8 lg:px-12 py-6">
         <button
           onClick={() => navigate('/shop')}

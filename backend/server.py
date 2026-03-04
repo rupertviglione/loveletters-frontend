@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Header, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -17,28 +17,61 @@ from jose import JWTError, jwt
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
+# ===========================================
+# CONFIGURATION - All from environment
+# ===========================================
+
+# MongoDB - Required
+mongo_url = os.environ.get('MONGO_URL')
+if not mongo_url:
+    raise RuntimeError("MONGO_URL environment variable is required")
+
+db_name = os.environ.get('DB_NAME')
+if not db_name:
+    raise RuntimeError("DB_NAME environment variable is required")
+
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[db_name]
 
-# Configure Stripe
+# Stripe - Required for payments
 stripe.api_key = os.environ.get('STRIPE_API_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
-# Security
-SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'weloveloveletters_secret_key_2026')
+# JWT Security - Required, no defaults allowed
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY environment variable is required")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
+
+# Admin credentials from environment
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+ADMIN_PASSWORD_HASH = os.environ.get('ADMIN_PASSWORD_HASH')
+
+# CORS - Restrict to known origins
+CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'https://weloveloveletters.netlify.app').split(',')
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
-app = FastAPI()
+app = FastAPI(
+    title="Love Letters API",
+    description="E-commerce API for Love Letters store",
+    version="1.0.0"
+)
 api_router = APIRouter(prefix="/api")
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
-# Auth Models
+# ===========================================
+# AUTH MODELS & FUNCTIONS
+# ===========================================
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -50,7 +83,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
-# Auth Functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -87,6 +119,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user is None:
         raise credentials_exception
     return user
+
+# ===========================================
+# DATA MODELS
+# ===========================================
 
 class ProductVariant(BaseModel):
     sizes: Optional[List[str]] = None
@@ -126,6 +162,13 @@ class ProductCreate(BaseModel):
     is_bundle: bool = False
     bundle_items: Optional[List[BundleItem]] = None
 
+# Order item from client - only IDs and quantities, no prices!
+class OrderItemInput(BaseModel):
+    product_id: str
+    quantity: int
+    variant: Optional[Dict[str, str]] = None
+
+# Full order item with price from database
 class OrderItem(BaseModel):
     product_id: str
     title: str
@@ -147,10 +190,11 @@ class Order(BaseModel):
     payment_status: str = "pending"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Client only sends product IDs and quantities - prices come from DB
 class OrderCreate(BaseModel):
     customer_email: EmailStr
     customer_name: str
-    items: List[OrderItem]
+    items: List[OrderItemInput]
 
 class PaymentTransaction(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -172,6 +216,10 @@ class ContactForm(BaseModel):
     name: str
     email: EmailStr
     message: str
+
+# ===========================================
+# PUBLIC ENDPOINTS
+# ===========================================
 
 @api_router.get("/")
 async def root():
@@ -212,7 +260,84 @@ async def create_product(product_input: ProductCreate):
     doc['created_at'] = doc['created_at'].isoformat()
     
     await db.products.insert_one(doc)
+    logger.info(f"Product created: {product_obj.id}")
     return product_obj
+
+# ===========================================
+# ORDERS - Price calculated from DB, not client
+# ===========================================
+
+@api_router.post("/orders", response_model=Order)
+async def create_order(order_input: OrderCreate, request: Request):
+    try:
+        order_items = []
+        subtotal = 0.0
+        
+        # SECURITY: Get prices from database, not from client
+        for item_input in order_input.items:
+            product = await db.products.find_one({"id": item_input.product_id}, {"_id": 0})
+            
+            if not product:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Product not found: {item_input.product_id}"
+                )
+            
+            # Use price from database
+            price = product['price']
+            item_total = price * item_input.quantity
+            subtotal += item_total
+            
+            order_items.append(OrderItem(
+                product_id=item_input.product_id,
+                title=product['title_pt'],
+                price=price,
+                quantity=item_input.quantity,
+                variant=item_input.variant
+            ))
+        
+        total = subtotal
+        order_number = f"LL-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        
+        order_obj = Order(
+            order_number=order_number,
+            customer_email=order_input.customer_email,
+            customer_name=order_input.customer_name,
+            items=order_items,
+            subtotal=subtotal,
+            total=total
+        )
+        
+        doc = order_obj.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.orders.insert_one(doc)
+        
+        logger.info(f"Order created: {order_obj.id}, total: €{total:.2f}, customer: {order_input.customer_email}")
+        
+        return order_obj
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating order: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/orders/{order_id}", response_model=Order)
+async def get_order(order_id: str):
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if isinstance(order.get('created_at'), str):
+        order['created_at'] = datetime.fromisoformat(order['created_at'])
+    
+    return order
+
+# ===========================================
+# STRIPE CHECKOUT
+# ===========================================
 
 @api_router.post("/checkout/session")
 async def create_checkout_session(checkout_req: CheckoutRequest, request: Request):
@@ -235,7 +360,7 @@ async def create_checkout_session(checkout_req: CheckoutRequest, request: Reques
                         'name': 'Love Letters Order',
                         'description': f"Order #{order['order_number']}"
                     },
-                    'unit_amount': int(order['total'] * 100),  # Stripe uses cents
+                    'unit_amount': int(order['total'] * 100),
                 },
                 'quantity': 1,
             }],
@@ -249,13 +374,11 @@ async def create_checkout_session(checkout_req: CheckoutRequest, request: Reques
             }
         )
         
-        # Update order with session ID
         await db.orders.update_one(
             {"id": checkout_req.order_id},
             {"$set": {"payment_session_id": session.id}}
         )
         
-        # Create payment transaction
         payment_transaction = PaymentTransaction(
             session_id=session.id,
             amount=float(order['total']),
@@ -275,6 +398,8 @@ async def create_checkout_session(checkout_req: CheckoutRequest, request: Reques
         
         await db.payment_transactions.insert_one(transaction_doc)
         
+        logger.info(f"Checkout session created: {session.id} for order: {checkout_req.order_id}")
+        
         return {
             "session_id": session.id,
             "url": session.url,
@@ -291,7 +416,6 @@ async def get_checkout_status(session_id: str):
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API key not configured")
         
-        # Retrieve session from Stripe
         session = stripe.checkout.Session.retrieve(session_id)
         
         transaction = await db.payment_transactions.find_one(
@@ -302,11 +426,9 @@ async def get_checkout_status(session_id: str):
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
         
-        # Check if payment was successful
         payment_status = "paid" if session.payment_status == "paid" else "pending"
         
         if payment_status == "paid" and transaction['payment_status'] != "paid":
-            # Update transaction
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
                 {
@@ -317,7 +439,6 @@ async def get_checkout_status(session_id: str):
                 }
             )
             
-            # Update order
             if transaction.get('order_id'):
                 await db.orders.update_one(
                     {"id": transaction['order_id']},
@@ -328,6 +449,7 @@ async def get_checkout_status(session_id: str):
                         }
                     }
                 )
+                logger.info(f"Payment confirmed for order: {transaction['order_id']}")
         
         return {
             "status": session.status,
@@ -341,6 +463,10 @@ async def get_checkout_status(session_id: str):
         logger.error(f"Error getting checkout status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===========================================
+# STRIPE WEBHOOK - With signature verification
+# ===========================================
+
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
     try:
@@ -348,13 +474,24 @@ async def stripe_webhook(request: Request):
         sig_header = request.headers.get("Stripe-Signature")
         
         if not sig_header:
+            logger.warning("Webhook received without Stripe signature")
             raise HTTPException(status_code=400, detail="Missing stripe signature")
         
-        # For production, verify webhook signature
-        # For now, just parse the event
-        event = stripe.Event.construct_from(
-            stripe.util.json.loads(payload), stripe.api_key
-        )
+        # SECURITY: Verify webhook signature
+        if STRIPE_WEBHOOK_SECRET:
+            try:
+                event = stripe.Webhook.construct_event(
+                    payload, sig_header, STRIPE_WEBHOOK_SECRET
+                )
+            except stripe.error.SignatureVerificationError as e:
+                logger.warning(f"Webhook signature verification failed: {str(e)}")
+                raise HTTPException(status_code=400, detail="Invalid signature")
+        else:
+            # Fallback for development (log warning)
+            logger.warning("STRIPE_WEBHOOK_SECRET not set - skipping signature verification")
+            event = stripe.Event.construct_from(
+                stripe.util.json.loads(payload), stripe.api_key
+            )
         
         if event.type == 'checkout.session.completed':
             session = event.data.object
@@ -385,50 +522,19 @@ async def stripe_webhook(request: Request):
                             }
                         }
                     )
+                    logger.info(f"Webhook: Payment confirmed for order: {transaction['order_id']}")
         
         return {"status": "success"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.post("/orders", response_model=Order)
-async def create_order(order_input: OrderCreate):
-    try:
-        subtotal = sum(item.price * item.quantity for item in order_input.items)
-        total = subtotal
-        
-        order_number = f"LL-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
-        
-        order_dict = order_input.model_dump()
-        order_dict['order_number'] = order_number
-        order_dict['subtotal'] = subtotal
-        order_dict['total'] = total
-        
-        order_obj = Order(**order_dict)
-        
-        doc = order_obj.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        
-        await db.orders.insert_one(doc)
-        
-        return order_obj
-        
-    except Exception as e:
-        logger.error(f"Error creating order: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.get("/orders/{order_id}", response_model=Order)
-async def get_order(order_id: str):
-    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-    
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    
-    if isinstance(order.get('created_at'), str):
-        order['created_at'] = datetime.fromisoformat(order['created_at'])
-    
-    return order
+# ===========================================
+# CONTACT FORM
+# ===========================================
 
 @api_router.post("/contact")
 async def submit_contact(form: ContactForm):
@@ -443,37 +549,46 @@ async def submit_contact(form: ContactForm):
         
         await db.contacts.insert_one(contact_doc)
         
+        logger.info(f"Contact form submitted: {form.email}")
+        
         return {"message": "Message sent successfully", "success": True}
         
     except Exception as e:
         logger.error(f"Error submitting contact form: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================
+# ===========================================
 # ADMIN ENDPOINTS
-# ============================================
+# ===========================================
 
 @api_router.post("/admin/login", response_model=Token)
-async def admin_login(login_req: LoginRequest):
-    # Check if admin user exists, if not create it
+async def admin_login(login_req: LoginRequest, request: Request):
+    # Check if admin credentials are configured
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD_HASH:
+        logger.error("Admin credentials not configured in environment")
+        raise HTTPException(status_code=500, detail="Admin not configured")
+    
+    # Check if admin user exists in DB
     admin = await db.admins.find_one({"username": login_req.username}, {"_id": 0})
     
     if not admin:
-        # Create the admin user on first login attempt with correct credentials
-        if login_req.username == "tmargaridarodrigues" and login_req.password == "weloveloveletters2026!admin":
-            hashed_password = get_password_hash(login_req.password)
+        # Create admin user if credentials match env vars
+        if login_req.username == ADMIN_USERNAME and pwd_context.verify(login_req.password, ADMIN_PASSWORD_HASH):
             admin_doc = {
-                "username": "tmargaridarodrigues",
-                "hashed_password": hashed_password,
+                "username": ADMIN_USERNAME,
+                "hashed_password": ADMIN_PASSWORD_HASH,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.admins.insert_one(admin_doc)
             admin = admin_doc
+            logger.info(f"Admin user created: {ADMIN_USERNAME}")
         else:
+            logger.warning(f"Failed login attempt for: {login_req.username}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Verify password
     if not verify_password(login_req.password, admin['hashed_password']):
+        logger.warning(f"Failed login attempt for: {login_req.username}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Create access token
@@ -481,6 +596,8 @@ async def admin_login(login_req: LoginRequest):
     access_token = create_access_token(
         data={"sub": admin['username']}, expires_delta=access_token_expires
     )
+    
+    logger.info(f"Admin login successful: {admin['username']}")
     
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -502,6 +619,8 @@ async def update_product(product_id: str, product_input: ProductCreate, current_
     
     await db.products.replace_one({"id": product_id}, product_dict)
     
+    logger.info(f"Product updated: {product_id} by {current_user['username']}")
+    
     product_obj = Product(**product_dict)
     if isinstance(product_obj.created_at, str):
         product_obj.created_at = datetime.fromisoformat(product_obj.created_at)
@@ -514,6 +633,8 @@ async def delete_product(product_id: str, current_user: dict = Depends(get_curre
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    logger.info(f"Product deleted: {product_id} by {current_user['username']}")
     
     return {"message": "Product deleted successfully"}
 
@@ -546,14 +667,20 @@ async def delete_contact(contact_id: str, current_user: dict = Depends(get_curre
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
     
+    logger.info(f"Contact deleted: {contact_id} by {current_user['username']}")
+    
     return {"message": "Contact deleted successfully"}
+
+# ===========================================
+# APP SETUP
+# ===========================================
 
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

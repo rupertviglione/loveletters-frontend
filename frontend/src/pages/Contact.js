@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import SEO from '@/components/SEO';
 
 const API = process.env.REACT_APP_BACKEND_URL 
   ? `${process.env.REACT_APP_BACKEND_URL}/api`
@@ -53,6 +54,11 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="contact-page" style={{ paddingTop: '80px', overflowX: 'hidden' }}>
+      <SEO 
+        title="Contacto"
+        description="Entra em contacto com a Love Letters. Escreve-nos, as tuas palavras são importantes."
+        url="/contact"
+      />
       {/* Title */}
       <div className="px-4 md:px-8 mb-0">
         <h1 className="font-syne font-extrabold text-3xl md:text-7xl uppercase tracking-tight leading-none">

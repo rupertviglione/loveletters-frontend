@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProductCard from '@/components/ProductCard';
+import SEO from '@/components/SEO';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -41,6 +42,11 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen pt-24 md:pt-32 overflow-x-hidden" data-testid="shop-page">
+      <SEO 
+        title="Loja"
+        description="Descobre a colecção Love Letters. T-shirts, tote bags, posters e complementos com poesia que se veste."
+        url="/shop"
+      />
       <div className="border-b border-border py-6 md:py-12 px-4 md:px-8 lg:px-12">
         <h1 className="font-syne font-extrabold text-4xl md:text-7xl uppercase tracking-tight leading-none mb-4 md:mb-6">
           {t('LOJA', 'SHOP')}
