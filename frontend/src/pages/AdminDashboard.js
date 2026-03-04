@@ -347,7 +347,7 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
     title_en: '',
     description_pt: '',
     description_en: '',
-    category: 'colecao',
+    category: 'tshirts',
     price: 0,
     original_price: null,
     images: [],
@@ -467,7 +467,11 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
           >
-            <option value="colecao">Coleção</option>
+            <option value="tshirts">T-shirts</option>
+            <option value="totebags">Tote Bags</option>
+            <option value="posters">Posters</option>
+            <option value="complementos">Complementos</option>
+            <option value="bundles">Conjuntos</option>
             <option value="rascunhos">Rascunhos</option>
           </select>
         </div>

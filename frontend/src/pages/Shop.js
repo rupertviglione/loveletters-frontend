@@ -19,7 +19,7 @@ const Shop = () => {
   const { language, t } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('tshirts');
 
   useEffect(() => {
     const fetchProducts = async () => {
