@@ -5,35 +5,34 @@ const Footer = () => {
   const { t } = useLanguage();
 
   return (
-    <footer className="border-t border-border py-8 px-4 md:px-8 lg:px-12" data-testid="footer">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+    <footer className="border-t border-border py-6 px-4 md:px-8 lg:px-12" data-testid="footer">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="text-[11px] text-muted-foreground font-mono uppercase tracking-wider">
           © {new Date().getFullYear()} Love Letters
         </p>
-        <div className="flex flex-col md:flex-row items-center gap-3 text-xs text-muted-foreground font-mono">
+        <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-mono">
           <a
             href="https://www.instagram.com/loveletters/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:opacity-60 transition-opacity underline"
+            className="hover:text-accent transition-colors"
           >
             Instagram
           </a>
-          <span className="hidden md:inline text-muted-foreground/40">•</span>
+          <span className="text-muted-foreground/30">·</span>
           <a
             href="/shipping-returns"
-            className="hover:opacity-60 transition-opacity underline"
+            className="hover:text-accent transition-colors"
           >
             {t('Envios & Devoluções', 'Shipping & Returns')}
           </a>
         </div>
-        <p className="text-xs text-muted-foreground font-mono">
-          {t('Design do site por', 'Website design by')}{' '}
+        <p className="text-[11px] text-muted-foreground font-mono">
           <a
             href="https://clarastudio.pt"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:opacity-60 transition-opacity underline"
+            className="hover:text-accent transition-colors"
           >
             - clara.
           </a>

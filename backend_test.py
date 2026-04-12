@@ -99,6 +99,10 @@ class APITester:
         
         return all_passed
 
+    def test_health_endpoint(self):
+        """Test health endpoint - new in iteration 2"""
+        return self.run_test("Health Check", "GET", "health", 200)
+
     def test_contact_form(self):
         """Test contact form submission"""
         test_data = {
@@ -138,6 +142,9 @@ def main():
     
     # Test basic API connection
     tester.test_api_root()
+    
+    # Test health endpoint (new in iteration 2)
+    tester.test_health_endpoint()
     
     # Test products API - should return exactly 17 products
     tester.test_products_api()

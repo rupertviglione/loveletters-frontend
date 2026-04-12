@@ -225,6 +225,14 @@ class ContactForm(BaseModel):
 async def root():
     return {"message": "We love Love Letters API"}
 
+@api_router.get("/health")
+async def health_check():
+    try:
+        await db.command("ping")
+        return {"status": "healthy", "database": "connected"}
+    except Exception:
+        return {"status": "unhealthy", "database": "disconnected"}
+
 @api_router.get("/products", response_model=List[Product])
 async def get_products(category: Optional[str] = None):
     query = {}
@@ -684,6 +692,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_db_client():
+    # Create indexes for performance
+    await db.products.create_index("id", unique=True)
+    await db.products.create_index("category")
+    await db.orders.create_index("id", unique=True)
+    await db.orders.create_index("created_at")
+    await db.contacts.create_index("id", unique=True)
+    await db.contacts.create_index("created_at")
+    await db.payment_transactions.create_index("session_id", unique=True)
+    logger.info("Database indexes created")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

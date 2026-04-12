@@ -78,9 +78,6 @@ const Contact = () => {
         <div className="relative w-full md:max-w-4xl md:mx-auto md:px-4 overflow-hidden">
           <div 
             className="relative flex justify-center" 
-            style={{ 
-              filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))'
-            }}
           >
             {/* Loading placeholder */}
             {!imageLoaded && (
@@ -89,33 +86,21 @@ const Contact = () => {
               </div>
             )}
             
-            {/* Typewriter image with blended edges */}
-            <div className="relative" style={{ width: '120%', maxWidth: '120%' }}>
-              <img
-                src="/img/maquina-nova.png"
-                alt="Typewriter"
-                className={`h-auto object-contain w-full ${imageLoaded ? 'block' : 'hidden'}`}
-                style={{ 
-                  filter: theme === 'dark' 
-                    ? 'brightness(0.9) contrast(0.9) opacity(0.7) invert(0.85) hue-rotate(180deg)' 
-                    : 'brightness(1.02) contrast(0.95) opacity(0.85)',
-                  mixBlendMode: theme === 'dark' ? 'screen' : 'multiply'
-                }}
-                onLoad={() => setImageLoaded(true)}
-              />
-              {/* Fade edges to blend with background */}
-              <div 
-                className={`absolute inset-0 pointer-events-none ${imageLoaded ? 'block' : 'hidden'}`}
-                style={{
-                  background: `
-                    linear-gradient(to top, hsl(var(--background)) 0%, transparent 15%),
-                    linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 20%),
-                    linear-gradient(to left, hsl(var(--background)) 0%, transparent 15%),
-                    linear-gradient(to right, hsl(var(--background)) 0%, transparent 15%)
-                  `
-                }}
-              />
-            </div>
+            {/* Typewriter image - slightly transparent to blend */}
+            <img
+              src="/img/maquina-nova.png"
+              alt="Typewriter"
+              className={`h-auto object-contain ${imageLoaded ? 'block' : 'hidden'}`}
+              style={{ 
+                filter: theme === 'dark' 
+                  ? 'brightness(1.1) contrast(0.95) grayscale(1)' 
+                  : 'brightness(1.02) contrast(0.98)',
+                opacity: theme === 'dark' ? 0.5 : 0.75,
+                width: '120%',
+                maxWidth: '120%'
+              }}
+              onLoad={() => setImageLoaded(true)}
+            />
             
             {/* Form positioned on the paper */}
             {imageLoaded && (
@@ -135,12 +120,11 @@ const Contact = () => {
                   required
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono placeholder:text-black/30"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/40 dark:border-white/20 dark:focus:border-white/40"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.3',
-                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
+                    lineHeight: '1.3'
                   }}
                   placeholder={t('Nome', 'Name')}
                   data-testid="contact-name"
@@ -151,12 +135,11 @@ const Contact = () => {
                   required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono placeholder:text-black/30"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/40 dark:border-white/20 dark:focus:border-white/40"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.3',
-                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
+                    lineHeight: '1.3'
                   }}
                   placeholder="Email"
                   data-testid="contact-email"
@@ -167,12 +150,11 @@ const Contact = () => {
                   value={formData.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
                   rows={4}
-                  className="w-full bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/30 resize-none"
+                  className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none dark:text-white dark:placeholder:text-white/40"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.4',
-                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
+                    lineHeight: '1.4'
                   }}
                   placeholder={t('Mensagem', 'Message')}
                   data-testid="contact-message"
@@ -181,7 +163,7 @@ const Contact = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left"
+                  className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left dark:text-white/60 dark:hover:text-accent"
                   style={{ 
                     fontSize: 'clamp(7px, 2vw, 13px)',
                     marginTop: 'clamp(2px, 0.5vw, 10px)'

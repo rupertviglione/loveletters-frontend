@@ -61,12 +61,12 @@ const Shop = () => {
 
       {/* Filter buttons - scrollable on mobile but fits better */}
       <div className="border-b border-border py-3 md:py-4 px-4 md:px-8 lg:px-12 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 md:gap-4 flex-wrap md:flex-nowrap">
+        <div className="flex gap-2 md:gap-3 flex-wrap md:flex-nowrap">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-3 md:px-6 py-1.5 md:py-2 border uppercase tracking-wider md:tracking-widest text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap ${
+              className={`px-3 md:px-5 py-1.5 md:py-2 border uppercase tracking-wider md:tracking-widest text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] ${
                 selectedCategory === category.id
                   ? 'bg-accent text-white border-accent'
                   : 'bg-transparent border-border hover:border-accent hover:text-accent'
@@ -104,8 +104,8 @@ const Shop = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
         </div>
       ) : (
-        <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-10 md:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

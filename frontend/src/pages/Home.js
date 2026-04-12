@@ -15,23 +15,23 @@ const Home = () => {
         url="/"
       />
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-24 md:pt-32">
+      <section className="relative min-h-[90vh] flex items-start pt-28 md:pt-36">
         <div className="absolute inset-0">
           <img
             src="/img/hero-bg.png"
             alt="Love letter background"
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-20"
           />
         </div>
 
-        <div className="relative w-full px-4 md:px-8 lg:px-12 py-8 md:py-16 z-10">
+        <div className="relative w-full px-4 md:px-8 lg:px-12 py-8 md:py-12 z-10">
           <div className="max-w-7xl mx-auto">
-            {/* Hero text - responsive sizing for mobile */}
+            {/* Hero text - slightly reduced, positioned higher */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.2 }}
-              className="font-syne font-extrabold text-[2.75rem] sm:text-6xl md:text-8xl lg:text-9xl uppercase leading-[0.9] tracking-tighter mb-8 md:mb-16"
+              className="font-syne font-extrabold text-[2.5rem] sm:text-5xl md:text-7xl lg:text-8xl uppercase leading-[0.9] tracking-tighter mb-6 md:mb-10"
             >
               WE <span className="text-accent">LOVE</span><br />
               LOVE<br />
@@ -42,7 +42,7 @@ const Home = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="font-serif text-lg md:text-2xl italic text-foreground/80 mb-8 md:mb-12 max-w-xl"
+              className="font-serif text-lg md:text-xl italic text-foreground/80 mb-6 md:mb-8 max-w-xl"
             >
               {t('Sim, adoramos cartas de amor.', 'Yes, we love love letters.')}
             </motion.p>
@@ -50,12 +50,12 @@ const Home = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 1 }}
+              transition={{ delay: 0.8, duration: 0.8 }}
               className="flex flex-wrap gap-4"
             >
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 px-6 md:px-10 py-4 md:py-5 bg-foreground text-background hover:bg-foreground/90 transition-all duration-300 font-courier font-bold uppercase text-xs md:text-sm tracking-wider"
+                className="inline-flex items-center gap-2 px-8 md:px-10 py-4 bg-foreground text-background hover:bg-accent hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 font-courier font-bold uppercase text-xs md:text-sm tracking-wider"
                 data-testid="hero-cta"
               >
                 {t('Entrar na loja', 'Enter the shop')}

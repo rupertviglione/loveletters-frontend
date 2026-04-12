@@ -126,3 +126,11 @@ a,
 [role="button"] {
   transition: color 150ms, background-color 150ms, border-color 150ms, transform 150ms;
 }
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
