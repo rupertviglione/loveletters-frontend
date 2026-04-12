@@ -8,7 +8,7 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
-  const API_URL = process.env.REACT_APP_BACKEND_URL;
+  const API_URL = "https://loveletters-backend.onrender.com";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
