@@ -111,7 +111,7 @@ const Home = () => {
       </section>
 
       {/* Banner - Mobile: faster animation, less space between text */}
-      <div className="my-10 md:my-16">
+      <div className="mt-10 md:mt-16">
         <Link to="/shop" className="block">
           <div className="bg-accent overflow-hidden py-3 md:py-4">
             <div className="banner-scroll flex items-center">
@@ -125,6 +125,64 @@ const Home = () => {
           </div>
         </Link>
       </div>
+
+      {/* Instagram Section */}
+      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-12" data-testid="instagram-section">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex items-center justify-between mb-8 md:mb-12">
+            <div>
+              <p className="font-courier font-bold text-xs uppercase tracking-widest text-muted-foreground mb-1">
+                Instagram
+              </p>
+              <a
+                href="https://www.instagram.com/we.love.loveletters/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-serif text-lg md:text-xl hover:text-accent transition-colors"
+                data-testid="instagram-handle"
+              >
+                @we.love.loveletters
+              </a>
+            </div>
+            <a
+              href="https://www.instagram.com/we.love.loveletters/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 border border-border hover:border-accent hover:text-accent transition-all duration-300 font-courier font-bold uppercase text-[10px] md:text-xs tracking-widest"
+              data-testid="instagram-follow-btn"
+            >
+              {t('Seguir', 'Follow')}
+            </a>
+          </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-1 md:gap-1.5">
+            {[
+              { src: '/img/t-shirt-write-that.png', alt: 'Write that love letter t-shirt' },
+              { src: '/img/poster-intimo-fotografia.jpg', alt: 'Poster intimo' },
+              { src: '/img/tote-o-poema-3.webp', alt: 'Tote bag O poema' },
+              { src: '/img/era-uma-vez-3.jpg', alt: 'Era uma vez' },
+              { src: '/img/poster-margem-fotografia.webp', alt: 'Poster margem' },
+              { src: '/img/t-shirt-flores.jpg', alt: 'T-shirt flores' },
+            ].map((img, i) => (
+              <a
+                key={i}
+                href="https://www.instagram.com/we.love.loveletters/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="aspect-square overflow-hidden bg-muted group"
+                data-testid={`instagram-img-${i}`}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:opacity-80"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <style jsx>{`
         @keyframes banner-scroll {
