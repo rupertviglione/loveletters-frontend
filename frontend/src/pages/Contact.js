@@ -55,7 +55,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 md:pt-28" data-testid="contact-page" style={{ overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-background pt-16 md:pt-20" data-testid="contact-page" style={{ overflowX: 'hidden' }}>
       <SEO 
         title="Contacto"
         description="Entra em contacto com a Love Letters. Escreve-nos, as tuas palavras são importantes."

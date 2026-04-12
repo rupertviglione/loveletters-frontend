@@ -41,7 +41,7 @@ const Shop = () => {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-screen pt-20 md:pt-28 overflow-x-hidden" data-testid="shop-page">
+    <div className="min-h-screen pt-16 md:pt-20 overflow-x-hidden" data-testid="shop-page">
       <SEO 
         title="Loja"
         description="Descobre a colecção Love Letters. T-shirts, tote bags, posters e complementos com poesia que se veste."

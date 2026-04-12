@@ -15,7 +15,7 @@ const Home = () => {
         url="/"
       />
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-start pt-28 md:pt-36">
+      <section className="relative min-h-[90vh] flex items-start pt-20 md:pt-24">
         <div className="absolute inset-0">
           <img
             src="/img/hero-bg.png"
