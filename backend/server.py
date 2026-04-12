@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -566,11 +567,40 @@ async def submit_contact(form: ContactForm):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ===========================================
+# RATE LIMITING (simple in-memory)
+# ===========================================
+login_attempts = {}  # {ip: [timestamp, ...]}
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 300  # 5 minutes
+
+def check_rate_limit(ip: str) -> bool:
+    now = datetime.now(timezone.utc)
+    if ip in login_attempts:
+        login_attempts[ip] = [
+            t for t in login_attempts[ip]
+            if (now - t).total_seconds() < LOGIN_WINDOW_SECONDS
+        ]
+        if len(login_attempts[ip]) >= MAX_LOGIN_ATTEMPTS:
+            return False
+    return True
+
+def record_login_attempt(ip: str):
+    now = datetime.now(timezone.utc)
+    if ip not in login_attempts:
+        login_attempts[ip] = []
+    login_attempts[ip].append(now)
+
+# ===========================================
 # ADMIN ENDPOINTS
 # ===========================================
 
 @api_router.post("/admin/login", response_model=Token)
 async def admin_login(login_req: LoginRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    
+    if not check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+    
     # Check if admin credentials are configured
     if not ADMIN_USERNAME or not ADMIN_PASSWORD_HASH:
         logger.error("Admin credentials not configured in environment")
@@ -591,11 +621,13 @@ async def admin_login(login_req: LoginRequest, request: Request):
             admin = admin_doc
             logger.info(f"Admin user created: {ADMIN_USERNAME}")
         else:
+            record_login_attempt(client_ip)
             logger.warning(f"Failed login attempt for: {login_req.username}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Verify password
     if not verify_password(login_req.password, admin['hashed_password']):
+        record_login_attempt(client_ip)
         logger.warning(f"Failed login attempt for: {login_req.username}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -692,6 +724,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security headers middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 @app.on_event("startup")
 async def startup_db_client():

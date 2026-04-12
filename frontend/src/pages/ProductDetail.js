@@ -215,7 +215,7 @@ const ProductDetail = () => {
 
           <button
             onClick={handleAddToCart}
-            className="w-full mt-8 px-8 py-4 bg-accent text-accent-foreground border border-accent hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all duration-300 uppercase tracking-widest text-sm font-bold"
+            className="w-full mt-8 px-8 py-4 bg-accent text-accent-foreground border border-accent hover:bg-foreground hover:border-foreground hover:text-background active:scale-[0.98] transition-all duration-300 uppercase tracking-widest text-sm font-bold"
             data-testid="add-to-cart-button"
           >
             {t('Adicionar ao carrinho', 'Add to cart')}

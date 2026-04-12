@@ -112,6 +112,92 @@ class APITester:
         }
         return self.run_test("Contact Form", "POST", "contact", 200, data=test_data)
 
+    def test_security_headers(self):
+        """Test security headers - new in iteration 3"""
+        url = f"{self.base_url}/api/health"
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Security Headers...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, timeout=10)
+            headers = response.headers
+            
+            # Check for required security headers
+            required_headers = {
+                'X-Content-Type-Options': 'nosniff',
+                'X-Frame-Options': 'DENY',
+                'X-XSS-Protection': '1; mode=block'
+            }
+            
+            all_present = True
+            for header, expected_value in required_headers.items():
+                if header in headers:
+                    actual_value = headers[header]
+                    if actual_value == expected_value:
+                        print(f"   ✓ {header}: {actual_value}")
+                    else:
+                        print(f"   ❌ {header}: Expected '{expected_value}', got '{actual_value}'")
+                        all_present = False
+                else:
+                    print(f"   ❌ Missing header: {header}")
+                    all_present = False
+            
+            if all_present:
+                self.tests_passed += 1
+                print(f"✅ Passed - All security headers present")
+                return True
+            else:
+                print(f"❌ Failed - Missing or incorrect security headers")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
+    def test_admin_rate_limiting(self):
+        """Test admin login rate limiting - new in iteration 3"""
+        url = f"{self.base_url}/api/admin/login"
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Admin Rate Limiting...")
+        print(f"   URL: {url}")
+        
+        try:
+            # Send 6 rapid login attempts with wrong credentials
+            wrong_credentials = {
+                "username": "admin",
+                "password": "wrongpassword"
+            }
+            
+            print("   Sending 6 rapid login attempts with wrong credentials...")
+            
+            for i in range(6):
+                response = requests.post(url, json=wrong_credentials, timeout=10)
+                print(f"   Attempt {i+1}: Status {response.status_code}")
+                
+                if i < 5:  # First 5 attempts should return 401
+                    if response.status_code != 401:
+                        print(f"   ❌ Expected 401 for attempt {i+1}, got {response.status_code}")
+                        return False
+                else:  # 6th attempt should return 429 (rate limited)
+                    if response.status_code == 429:
+                        print(f"   ✓ Rate limiting triggered on attempt {i+1}")
+                        self.tests_passed += 1
+                        print(f"✅ Passed - Rate limiting working correctly")
+                        return True
+                    else:
+                        print(f"   ❌ Expected 429 for attempt {i+1}, got {response.status_code}")
+                        return False
+            
+            print(f"❌ Failed - Rate limiting not triggered after 6 attempts")
+            return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
 def main():
     # Get the public URL from frontend .env
     try:
@@ -154,6 +240,12 @@ def main():
     
     # Test contact form
     tester.test_contact_form()
+    
+    # Test security headers (new in iteration 3)
+    tester.test_security_headers()
+    
+    # Test admin rate limiting (new in iteration 3)
+    tester.test_admin_rate_limiting()
 
     # Print results
     print(f"\n" + "="*60)

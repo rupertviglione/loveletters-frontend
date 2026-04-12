@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
-import { CheckCircle, Loader } from 'lucide-react';
+import { CheckCircle, Loader, AlertCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -16,6 +16,7 @@ const Success = () => {
   const [status, setStatus] = useState('checking');
   const [orderData, setOrderData] = useState(null);
   const sessionId = searchParams.get('session_id');
+  const clearedRef = useRef(false);
 
   useEffect(() => {
     if (!sessionId) {
@@ -24,7 +25,8 @@ const Success = () => {
     }
 
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 8;
+    let timeoutId;
 
     const checkPaymentStatus = async () => {
       try {
@@ -33,13 +35,16 @@ const Success = () => {
         if (response.data.payment_status === 'paid') {
           setStatus('success');
           setOrderData(response.data);
-          clearCart();
+          if (!clearedRef.current) {
+            clearCart();
+            clearedRef.current = true;
+          }
         } else if (response.data.status === 'expired') {
           setStatus('error');
         } else {
           attempts++;
           if (attempts < maxAttempts) {
-            setTimeout(checkPaymentStatus, 2000);
+            timeoutId = setTimeout(checkPaymentStatus, 2000);
           } else {
             setStatus('timeout');
           }
@@ -48,7 +53,7 @@ const Success = () => {
         console.error('Error checking payment status:', error);
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(checkPaymentStatus, 2000);
+          timeoutId = setTimeout(checkPaymentStatus, 2000);
         } else {
           setStatus('error');
         }
@@ -56,26 +61,62 @@ const Success = () => {
     };
 
     checkPaymentStatus();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [sessionId, navigate, clearCart]);
 
   if (status === 'checking') {
     return (
-      <div className="min-h-screen pt-24 md:pt-32 flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen pt-24 md:pt-32 flex flex-col items-center justify-center px-4" data-testid="success-checking">
         <Loader className="animate-spin text-accent mb-6" size={48} />
-        <p className="font-fraunces text-xl text-muted-foreground italic">
+        <p className="font-serif text-xl text-muted-foreground italic">
           {t('A verificar pagamento...', 'Checking payment...')}
         </p>
       </div>
     );
   }
 
-  if (status === 'error' || status === 'timeout') {
+  if (status === 'timeout') {
     return (
-      <div className="min-h-screen pt-24 md:pt-32 flex flex-col items-center justify-center px-4">
-        <h1 className="font-archivo font-black text-4xl md:text-6xl tracking-tighter uppercase mb-6 text-destructive">
+      <div className="min-h-screen pt-24 md:pt-32 flex flex-col items-center justify-center px-4" data-testid="success-timeout">
+        <Clock className="text-muted-foreground mb-6" size={48} />
+        <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-4">
+          {t('Pagamento pendente', 'Payment pending')}
+        </h1>
+        <p className="font-serif text-lg text-muted-foreground mb-8 text-center max-w-2xl">
+          {t(
+            'O pagamento esta a ser processado. Recebera um email de confirmacao quando estiver concluido. Se tiver duvidas, contacte-nos.',
+            'Payment is being processed. You will receive a confirmation email when complete. If you have questions, contact us.'
+          )}
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => navigate('/contact')}
+            className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
+          >
+            {t('Contactar', 'Contact us')}
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="px-8 py-4 border border-border hover:border-accent hover:text-accent transition-all duration-300 uppercase tracking-widest text-xs font-bold"
+          >
+            {t('Inicio', 'Home')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen pt-24 md:pt-32 flex flex-col items-center justify-center px-4" data-testid="success-error">
+        <AlertCircle className="text-destructive mb-6" size={48} />
+        <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-4 text-destructive">
           {t('Erro', 'Error')}
         </h1>
-        <p className="font-fraunces text-xl text-muted-foreground italic mb-8 text-center max-w-2xl">
+        <p className="font-serif text-lg text-muted-foreground mb-8 text-center max-w-2xl">
           {t(
             'Ocorreu um erro ao verificar o pagamento. Por favor, contacte-nos se o problema persistir.',
             'An error occurred while verifying payment. Please contact us if the problem persists.'
@@ -83,9 +124,9 @@ const Success = () => {
         </p>
         <button
           onClick={() => navigate('/shop')}
-          className="px-8 py-4 bg-accent text-accent-foreground border border-accent hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all duration-300 uppercase tracking-widest text-sm font-bold"
+          className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
         >
-          {t('Voltar à loja', 'Back to shop')}
+          {t('Voltar a loja', 'Back to shop')}
         </button>
       </div>
     );
@@ -105,23 +146,23 @@ const Success = () => {
           transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
           className="mb-8"
         >
-          <CheckCircle className="mx-auto text-accent" size={80} />
+          <CheckCircle className="mx-auto text-accent" size={72} />
         </motion.div>
 
-        <h1 className="font-archivo font-black text-4xl md:text-6xl tracking-tighter uppercase mb-6">
+        <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-6">
           {t('Obrigado!', 'Thank you!')}
         </h1>
 
-        <p className="font-fraunces text-xl md:text-2xl leading-relaxed mb-8">
+        <p className="font-serif text-lg md:text-xl leading-relaxed mb-8 max-w-2xl mx-auto">
           {t(
-            'O seu pedido foi confirmado com sucesso. Receberá um email de confirmação em breve.',
+            'O seu pedido foi confirmado com sucesso. Recebera um email de confirmacao em breve.',
             'Your order has been confirmed successfully. You will receive a confirmation email shortly.'
           )}
         </p>
 
         {orderData?.metadata && (
-          <div className="border border-border p-6 md:p-8 mb-8 text-left max-w-2xl mx-auto">
-            <h2 className="font-archivo font-bold text-xl uppercase tracking-tighter mb-4">
+          <div className="border border-border p-6 md:p-8 mb-8 text-left max-w-md mx-auto">
+            <h2 className="font-courier font-bold text-base uppercase tracking-tight mb-4">
               {t('Detalhes do pedido', 'Order details')}
             </h2>
             <div className="space-y-2 font-mono text-sm">
@@ -146,16 +187,16 @@ const Success = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => navigate('/shop')}
-            className="px-8 py-4 bg-accent text-accent-foreground border border-accent hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all duration-300 uppercase tracking-widest text-sm font-bold"
+            className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
             data-testid="continue-shopping-button"
           >
             {t('Continuar a comprar', 'Continue shopping')}
           </button>
           <button
             onClick={() => navigate('/')}
-            className="px-8 py-4 bg-transparent border border-border hover:border-accent hover:text-accent transition-all duration-300 uppercase tracking-widest text-sm font-bold"
+            className="px-8 py-4 border border-border hover:border-accent hover:text-accent transition-all duration-300 uppercase tracking-widest text-xs font-bold"
           >
-            {t('Voltar ao início', 'Back to home')}
+            {t('Voltar ao inicio', 'Back to home')}
           </button>
         </div>
       </motion.div>
