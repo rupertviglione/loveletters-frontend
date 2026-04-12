@@ -33,7 +33,7 @@ const Header = () => {
           <img 
             src="/logo-v2.svg" 
             alt="Love Letters" 
-            className="h-5 md:h-[30px] w-auto"
+            className="h-5 md:h-[30px] w-auto dark:brightness-0 dark:invert"
           />
         </Link>
 

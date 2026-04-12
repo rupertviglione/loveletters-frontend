@@ -39,25 +39,25 @@ code {
         --radius: 0rem;
     }
     .dark {
-        --background: 0 0% 5.9%;
-        --foreground: 0 0% 94.9%;
-        --card: 0 0% 8%;
-        --card-foreground: 0 0% 94.9%;
-        --popover: 0 0% 5.9%;
-        --popover-foreground: 0 0% 94.9%;
-        --primary: 0 0% 94.9%;
-        --primary-foreground: 0 0% 5.9%;
-        --secondary: 0 0% 14%;
-        --secondary-foreground: 0 0% 94.9%;
-        --muted: 0 0% 14%;
-        --muted-foreground: 0 0% 60%;
-        --accent: 11 79% 45%;
+        --background: 30 10% 8%;
+        --foreground: 40 15% 90%;
+        --card: 30 10% 10%;
+        --card-foreground: 40 15% 90%;
+        --popover: 30 10% 8%;
+        --popover-foreground: 40 15% 90%;
+        --primary: 40 15% 90%;
+        --primary-foreground: 30 10% 8%;
+        --secondary: 30 8% 14%;
+        --secondary-foreground: 40 15% 90%;
+        --muted: 30 8% 14%;
+        --muted-foreground: 40 10% 55%;
+        --accent: 11 79% 50%;
         --accent-foreground: 0 0% 100%;
-        --destructive: 11 79% 45%;
+        --destructive: 11 79% 50%;
         --destructive-foreground: 0 0% 100%;
-        --border: 0 0% 14%;
-        --input: 0 0% 12%;
-        --ring: 0 0% 94.9%;
+        --border: 30 8% 18%;
+        --input: 30 8% 14%;
+        --ring: 40 15% 90%;
     }
 }
 

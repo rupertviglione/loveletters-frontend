@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import SEO from '@/components/SEO';
@@ -12,6 +13,7 @@ const API = process.env.REACT_APP_BACKEND_URL
 
 const Contact = () => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -87,18 +89,33 @@ const Contact = () => {
               </div>
             )}
             
-            {/* Typewriter image */}
-            <img
-              src="/img/maquina-nova.png"
-              alt="Typewriter"
-              className={`h-auto object-contain ${imageLoaded ? 'block' : 'hidden'}`}
-              style={{ 
-                filter: 'brightness(1.02) contrast(0.98)',
-                width: '120%',
-                maxWidth: '120%'
-              }}
-              onLoad={() => setImageLoaded(true)}
-            />
+            {/* Typewriter image with blended edges */}
+            <div className="relative" style={{ width: '120%', maxWidth: '120%' }}>
+              <img
+                src="/img/maquina-nova.png"
+                alt="Typewriter"
+                className={`h-auto object-contain w-full ${imageLoaded ? 'block' : 'hidden'}`}
+                style={{ 
+                  filter: theme === 'dark' 
+                    ? 'brightness(0.9) contrast(0.9) opacity(0.7) invert(0.85) hue-rotate(180deg)' 
+                    : 'brightness(1.02) contrast(0.95) opacity(0.85)',
+                  mixBlendMode: theme === 'dark' ? 'screen' : 'multiply'
+                }}
+                onLoad={() => setImageLoaded(true)}
+              />
+              {/* Fade edges to blend with background */}
+              <div 
+                className={`absolute inset-0 pointer-events-none ${imageLoaded ? 'block' : 'hidden'}`}
+                style={{
+                  background: `
+                    linear-gradient(to top, hsl(var(--background)) 0%, transparent 15%),
+                    linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 20%),
+                    linear-gradient(to left, hsl(var(--background)) 0%, transparent 15%),
+                    linear-gradient(to right, hsl(var(--background)) 0%, transparent 15%)
+                  `
+                }}
+              />
+            </div>
             
             {/* Form positioned on the paper */}
             {imageLoaded && (
@@ -118,11 +135,12 @@ const Contact = () => {
                   required
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono placeholder:text-black/30"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.3'
+                    lineHeight: '1.3',
+                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
                   }}
                   placeholder={t('Nome', 'Name')}
                   data-testid="contact-name"
@@ -133,11 +151,12 @@ const Contact = () => {
                   required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono placeholder:text-black/30"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.3'
+                    lineHeight: '1.3',
+                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
                   }}
                   placeholder="Email"
                   data-testid="contact-email"
@@ -148,11 +167,12 @@ const Contact = () => {
                   value={formData.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
                   rows={4}
-                  className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none"
+                  className="w-full bg-transparent border-0 focus:outline-none font-mono placeholder:text-black/30 resize-none"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
-                    lineHeight: '1.4'
+                    lineHeight: '1.4',
+                    color: theme === 'dark' ? 'hsl(40, 15%, 90%)' : 'black'
                   }}
                   placeholder={t('Mensagem', 'Message')}
                   data-testid="contact-message"

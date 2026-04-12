@@ -11,7 +11,7 @@ const Home = () => {
     <div className="min-h-screen overflow-x-hidden" data-testid="home-page">
       <SEO 
         title={null}
-        description="Love Letters transforma cartas de amor em objectos que podes vestir. Poesia que se veste, merchandising poético independente."
+        description="Love Letters transforma cartas de amor em objectos que podes vestir. Merchandising poetico independente."
         url="/"
       />
       {/* Hero Section */}
@@ -26,15 +26,6 @@ const Home = () => {
 
         <div className="relative w-full px-4 md:px-8 lg:px-12 py-8 md:py-16 z-10">
           <div className="max-w-7xl mx-auto">
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8 }}
-              className="font-serif text-xs md:text-sm uppercase tracking-widest text-muted-foreground mb-6 md:mb-12"
-            >
-              {t('Poesia que se veste', 'Poetry you can wear')}
-            </motion.p>
-
             {/* Hero text - responsive sizing for mobile */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -75,14 +66,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* THIS IS A LOVE POEM Section - Improved spacing */}
+      {/* WRITE THAT LOVE LETTER Section - Improved spacing */}
       <section className="py-20 md:py-32 px-4 md:px-8 lg:px-16 bg-background">
         <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
           <div className="p-6 md:p-16 flex items-center justify-center aspect-square">
             <h2 className="font-syne font-extrabold text-4xl sm:text-5xl md:text-7xl lg:text-8xl uppercase leading-none tracking-tighter text-accent text-center">
-              THIS IS<br />
-              A LOVE<br />
-              POEM.
+              WRITE<br />
+              THAT LOVE<br />
+              LETTER.
             </h2>
           </div>
           
@@ -106,7 +97,7 @@ const Home = () => {
       {/* Text Section - More breathing room */}
       <section className="py-20 md:py-32 px-4 md:px-8 lg:px-16 bg-secondary/20 border-t border-border">
         <div className="max-w-[900px] mx-auto text-center">
-          <p className="font-serif text-xl md:text-2xl lg:text-3xl leading-relaxed italic text-foreground/70 mb-12 md:mb-20">
+          <p className="font-serif text-xl md:text-2xl lg:text-3xl leading-relaxed text-foreground/70 mb-12 md:mb-20">
             {t(
               'E quando as palavras não parecem ser suficientes, ou em silêncio se diz tudo o que é verdadeiramente necessário, para cada uma destas nossas cartas — que esperamos que façam vossas —, escolhemos uma imagem que representa o ambiente que a inspirou.',
               'And when words don\'t seem to be enough, or in silence everything that is truly necessary is said, for each of these letters — which we hope will become yours — we choose an image that represents the environment that inspired it.'
@@ -114,7 +105,7 @@ const Home = () => {
           </p>
 
           <h2 className="font-syne text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight leading-tight">
-            SO, WRITE THAT <span className="text-accent">LOVE<br/>LETTER.</span>
+            THIS IS A <span className="text-accent">LOVE<br/>POEM.</span>
           </h2>
         </div>
       </section>

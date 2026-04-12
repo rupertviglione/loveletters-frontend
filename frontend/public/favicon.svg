@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#111"/><text x="50%" y="50%" font-family="Courier New, monospace" font-size="18" font-weight="bold" text-anchor="middle" dominant-baseline="middle" fill="white">ll</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="4" fill="#ce2d13"/>
+  <g transform="translate(5, 4) scale(0.68)">
+    <!-- Envelope shape -->
+    <rect x="2" y="8" width="28" height="18" rx="2" fill="none" stroke="white" stroke-width="2"/>
+    <!-- Envelope flap -->
+    <path d="M2 8 L16 18 L30 8" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Heart -->
+    <path d="M16 15 C16 13 14 11 12 11 C10 11 8 13 8 15 C8 19 16 23 16 23 C16 23 24 19 24 15 C24 13 22 11 20 11 C18 11 16 13 16 15 Z" fill="white" opacity="0.9"/>
+  </g>
+</svg>
