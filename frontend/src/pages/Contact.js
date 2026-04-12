@@ -55,15 +55,15 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" data-testid="contact-page" style={{ paddingTop: '80px', overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-background pt-20 md:pt-28" data-testid="contact-page" style={{ overflowX: 'hidden' }}>
       <SEO 
         title="Contacto"
         description="Entra em contacto com a Love Letters. Escreve-nos, as tuas palavras são importantes."
         url="/contact"
       />
       {/* Title */}
-      <div className="px-4 md:px-8 mb-0">
-        <h1 className="font-syne font-extrabold text-3xl md:text-7xl uppercase tracking-tight leading-none">
+      <div className="border-b border-border py-6 md:py-12 px-4 md:px-8 lg:px-12">
+        <h1 className="font-syne font-extrabold text-4xl md:text-7xl uppercase tracking-tight leading-none">
           {t('CONTACTO', 'CONTACT')}
         </h1>
       </div>
