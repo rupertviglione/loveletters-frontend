@@ -75,7 +75,7 @@ const Contact = () => {
         className="relative w-full"
       >
         {/* Typewriter with form overlay */}
-        <div className="relative w-full md:max-w-4xl md:mx-auto md:px-4 overflow-hidden">
+        <div className="relative w-full md:max-w-3xl md:mx-auto md:px-4 overflow-hidden">
           <div 
             className="relative flex justify-center" 
           >
@@ -86,18 +86,16 @@ const Contact = () => {
               </div>
             )}
             
-            {/* Typewriter image - slightly transparent to blend */}
+            {/* Typewriter image - natural size, slightly transparent */}
             <img
               src="/img/maquina-nova.png"
               alt="Typewriter"
               className={`h-auto object-contain ${imageLoaded ? 'block' : 'hidden'}`}
               style={{ 
-                filter: theme === 'dark' 
-                  ? 'brightness(1.1) contrast(0.95) grayscale(1)' 
-                  : 'brightness(1.02) contrast(0.98)',
-                opacity: theme === 'dark' ? 0.5 : 0.75,
-                width: '120%',
-                maxWidth: '120%'
+                filter: 'brightness(1.02) contrast(0.98)',
+                opacity: theme === 'dark' ? 0.85 : 0.8,
+                width: '100%',
+                maxWidth: '100%'
               }}
               onLoad={() => setImageLoaded(true)}
             />
@@ -108,9 +106,9 @@ const Contact = () => {
                 onSubmit={handleSubmit}
                 className="absolute flex flex-col"
                 style={{
-                  top: '12%',
-                  left: '27%',
-                  right: '27%',
+                  top: '8%',
+                  left: '24%',
+                  right: '24%',
                   gap: 'clamp(4px, 1vw, 12px)'
                 }}
                 data-testid="contact-form"
@@ -120,7 +118,7 @@ const Contact = () => {
                   required
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/40 dark:border-white/20 dark:focus:border-white/40"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
@@ -135,7 +133,7 @@ const Contact = () => {
                   required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/40 dark:border-white/20 dark:focus:border-white/40"
+                  className="w-full bg-transparent border-0 border-b border-black/15 focus:border-black/30 focus:outline-none font-mono text-black placeholder:text-black/30"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
@@ -150,7 +148,7 @@ const Contact = () => {
                   value={formData.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
                   rows={4}
-                  className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none dark:text-white dark:placeholder:text-white/40"
+                  className="w-full bg-transparent border-0 focus:outline-none font-mono text-black placeholder:text-black/30 resize-none"
                   style={{ 
                     fontSize: 'clamp(8px, 2.5vw, 15px)', 
                     padding: 'clamp(2px, 0.5vw, 6px) 0',
@@ -163,7 +161,7 @@ const Contact = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left dark:text-white/60 dark:hover:text-accent"
+                  className="w-full font-mono text-black/60 hover:text-accent transition-colors disabled:opacity-30 text-left"
                   style={{ 
                     fontSize: 'clamp(7px, 2vw, 13px)',
                     marginTop: 'clamp(2px, 0.5vw, 10px)'

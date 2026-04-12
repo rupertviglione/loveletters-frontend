@@ -1,71 +1,34 @@
 # Love Letters - PRD
 
 ## Architecture
-- **Frontend**: React 19, Tailwind CSS, Framer Motion, React Router DOM, Axios, React.lazy code splitting
-- **Backend**: FastAPI, Motor (MongoDB async), Stripe, JWT auth, Security headers middleware, Rate limiting
-- **Database**: MongoDB (loveletters) with indexes on id, created_at, session_id
+- **Frontend**: React 19, Tailwind CSS, Framer Motion, React.lazy code splitting
+- **Backend**: FastAPI, Motor (MongoDB Atlas), Stripe, JWT auth, Security headers, Rate limiting
+- **Database**: MongoDB Atlas (loveletters.pcoahxd.mongodb.net) with indexes
 
 ## What's Been Implemented
 
-### Session 1 (2026-04-12):
-- Removed "Poesia que se veste", swapped hero sections, removed italic
-- Fixed dark mode (logo visibility, warm color scheme)
-- New favicon (LL italic serif on red)
-- Backend configured, 17 products seeded
+### Session 1-3 (2026-04-12):
+- Content changes (removed "Poesia que se veste", swapped sections, removed italic)
+- Dark mode fix (logo visibility, warm color scheme)
+- Checkout loading states + double-submit prevention
+- Code splitting, API service layer, security headers, rate limiting, DB indexes
 
-### Session 2 (2026-04-12):
-- Typewriter fix (transparency, grayscale dark mode)
-- Hero improvements (smaller, CTA above fold)
-- Shop 4-column grid, compact product cards
-- Footer simplified
-- Backend /health endpoint + DB indexes
-
-### Session 3 (2026-04-12):
-- **Checkout loading states**: Spinner on submit button, disabled inputs/button during loading, error display area
-- **Double-submit prevention**: useRef flag + loading state check
-- **Success page**: Distinct states (checking/success/timeout/error), cleanup on unmount, single cart clear
-- **Code splitting**: React.lazy for all non-home routes with Suspense + PageLoader fallback
-- **API service layer**: /services/api.js with typed functions
-- **Security headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy
-- **Rate limiting**: Admin login limited to 5 attempts per 5 min window per IP
-- **DB indexes**: Unique indexes on id fields, indexes on created_at and session_id
-
-### Testing: 100% backend (12/12), 85% frontend (checkout loading states untestable without live Stripe)
-
-## ChatGPT Suggestions - Completion Status
-
-### DONE:
-- [x] Hero: headline reduced, CTA above fold, reduced background noise
-- [x] Layout: grid consistency, normalized alignments, text max-width
-- [x] Shop: reduced card size, increased grid density, hierarchy (image/name/price), hover states
-- [x] Filters: improved active states, interactive hover
-- [x] Buttons: hover/active states, better contrast and padding
-- [x] Footer: simplified
-- [x] Checkout: loading state, prevent multiple submits, error display
-- [x] Success page: backend verification, distinct states (success/pending/error), timeout fallback
-- [x] Structure: API service layer (/services/api.js)
-- [x] Code splitting by route (React.lazy)
-- [x] Health endpoint (GET /health)
-- [x] Security headers
-- [x] Rate limiting on login
-- [x] Database indexes
-- [x] Stripe prices from backend only (already existed)
-- [x] Webhook implementation (already existed)
-
-### REMAINING:
-- [ ] API versioning (/api/v1/) - LOW priority, can break existing clients
-- [ ] React Query for data management - MEDIUM priority
-- [ ] JWT refresh tokens + shorter expiry - MEDIUM priority
-- [ ] Image conversion to WebP/AVIF - LOW priority
-- [ ] Pagination on DB queries - LOW priority (small dataset)
+### Session 4 (2026-04-12):
+- **MongoDB Atlas**: Connected to real Atlas cluster with 17 real products + real images
+- **Typewriter contact page**: Reduced to 100% width (shows full machine body, keys, base), opacity 0.8
+- **Dark mode typewriter**: Removed grayscale filter - image stays natural with paper WHITE (not grey), typewriter whites visible
+- **Form fields**: Always black text on white paper (natural, not dark-mode adapted since they sit on white paper)
+- **Favicon**: Typographic "LL." italic serif on red background, cache-busted (?v=3)
+- **Mobile responsiveness verified**: Home, Shop (2-col), Product Detail, Contact - all working well
 
 ## Stripe Configuration
-**AWAITING**: Author needs to create Stripe account and share:
-1. Secret Key (sk_live_... or sk_test_...)
-2. Webhook Secret (whsec_...)
-From: https://dashboard.stripe.com/apikeys
+**AWAITING**: Author needs to:
+1. Create account at https://dashboard.stripe.com
+2. Share Secret Key (sk_live_... or sk_test_...)
+3. Configure webhook at: `https://loveletters-backend.onrender.com/api/webhook/stripe`
+4. Share Webhook Secret (whsec_...)
 
 ## Next Tasks
-1. Configure real Stripe keys when author provides them
-2. Wait for author on "Drops ou mini-colecoes" structure
-3. Replace placeholder product images
+1. Stripe keys from author
+2. "Drops ou mini-colecoes" structure from author
+3. Optional: React Query, JWT refresh tokens
