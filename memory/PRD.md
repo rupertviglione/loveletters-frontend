@@ -11,56 +11,70 @@ Portuguese love poetry merchandising store. Frontend (React) + Backend (FastAPI 
 - **Deployment**: Netlify (frontend), Railway (backend)
 
 ## Core Requirements
-1. E-commerce store for poetic merchandise (t-shirts, tote bags, posters, notebooks, pins, bundles)
+1. E-commerce store for poetic merchandise
 2. Multi-language support (PT/EN)
 3. Dark/Light theme toggle
 4. Contact form
 5. Admin dashboard with JWT auth
 6. Stripe payment integration
 
-## What's Been Implemented (2026-04-12)
+## What's Been Implemented
 
-### Changes Made This Session:
-1. **Removed "Poesia que se veste"** from home page hero section and SEO description
-2. **Swapped sections**: "WRITE THAT LOVE LETTER" now appears first, "THIS IS A LOVE POEM" second
-3. **Removed italic** from "E quando as palavras..." paragraph
-4. **Improved typewriter blending** on Contact page: gradient fade edges, reduced opacity, mix-blend-mode
-5. **Fixed dark mode**:
-   - Logo now uses `dark:brightness-0 dark:invert` for visibility
-   - Warm dark color scheme (30 10% 8% background, warm cream text)
-   - Accent color slightly brighter in dark mode for better visibility
-   - Contact page typewriter adapts to dark mode (invert + hue-rotate)
-   - Form inputs adapt text color based on theme
-6. **New favicon**: Envelope with heart design (SVG) replacing generic "ll" text
-7. **Backend setup**: Configured with JWT auth, seeded 17 products
+### Session 1 (2026-04-12):
+- Removed "Poesia que se veste" from hero + SEO
+- Swapped sections: "WRITE THAT LOVE LETTER" first, "THIS IS A LOVE POEM" second
+- Removed italic from "E quando as palavras..." paragraph
+- Fixed dark mode: logo visible, warm color scheme
+- New favicon (LL italic serif on red)
+- Backend configured, 17 products seeded
 
-### Testing: All tests passed (100% backend, 100% frontend)
+### Session 2 (2026-04-12):
+- **Typewriter fix**: Removed gradient borders, just slight transparency (0.75 light, 0.5 dark), grayscale in dark mode
+- **Dark mode form**: White text fields in dark mode, legible
+- **Hero improvements**: Reduced headline size, positioned higher, CTA above fold, reduced background noise (opacity 0.2)
+- **Shop grid**: 4-column layout, smaller/denser cards, improved hover states
+- **Product cards**: Compact design with line-clamp, better hierarchy
+- **Footer**: Simplified, reduced visual impact
+- **Backend**: Added /health endpoint, database indexes
+- **Hover states**: CTA hover to accent color, filter button hover, card border hover
 
-## Prioritized Backlog
+### Testing: All passed (100% backend, 95% frontend - only toast timing detection)
 
-### P0 (Critical)
-- Stripe payment integration (keys not yet configured)
+## ChatGPT Suggestions Status
 
-### P1 (High)
-- "Drops ou mini-colecções" - Product organization into collections/drops (awaiting author clarification on structure)
-- Real product images (currently using unsplash/pexels placeholders)
+### Done:
+- Hero headline size reduced
+- CTA above the fold
+- Background noise reduced
+- Grid density improved (4 cols)
+- Card size reduced
+- Better hover states on buttons/filters
+- Footer simplified
+- /health endpoint added
+- Database indexes created
+- Prices validated from backend (already existed)
+- Webhook implemented (already existed)
 
-### P2 (Medium)
-- Order management in admin dashboard
-- Email notifications for orders
-- SEO optimization with real OG images
+### Backlog (P1):
+- API versioning (/api/v1/)
+- React Query for data management
+- Lazy loading images (WebP/AVIF)
+- JWT refresh tokens + shorter expiry
+- Rate limiting on login
+- Loading states on checkout
+- Prevent multiple submits
+- Success page payment verification
+- Code splitting by route
+- Security headers (CSP, X-Frame-Options)
 
-### P3 (Nice to have)
-- Product search/filter improvements
-- Wishlist functionality
-- Social media sharing
-
-## User Personas
-1. **Customer**: Portuguese-speaking, interested in poetic merchandise
-2. **Admin**: Store owner managing products, orders, contacts
-3. **Author**: Content creator providing poetry and collection structure
+### Deferred:
+- "Drops ou mini-colecoes" - awaiting author clarification
+- Real product images
+- Stripe real keys configuration
 
 ## Next Tasks
-- Wait for author clarification on "Drops ou mini-colecções" structure
-- Configure real Stripe keys for payment processing
-- Replace placeholder product images with real ones
+1. Wait for author on "Drops" structure
+2. Configure real Stripe keys
+3. Implement checkout loading states + prevent double-submit
+4. Add React Query for better data management
+5. JWT refresh tokens
