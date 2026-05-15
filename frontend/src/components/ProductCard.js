@@ -8,15 +8,32 @@ const ProductCard = ({ product }) => {
   const { language, t } = useLanguage();
   const { addItem } = useCart();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const title = language === 'pt' ? product.title_pt : product.title_en;
   const hasVariants = product.variants && (product.variants.sizes || product.variants.colors);
+  const images = product.images && product.images.length > 0 ? product.images : [];
+  const hasMultipleImages = images.length > 1;
 
   const handleQuickAdd = (e) => {
     e.preventDefault();
     if (!hasVariants) {
       addItem(product);
     }
+  };
+
+  const goToPreviousImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageLoaded(false);
+    setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const goToNextImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageLoaded(false);
+    setActiveImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
   return (
@@ -28,23 +45,44 @@ const ProductCard = ({ product }) => {
       data-testid={`product-card-${product.id}`}
     >
       <Link to={`/shop/${product.id}`} className="block">
-        {/* Image container - tighter padding */}
-        <div className="aspect-square overflow-hidden bg-muted p-3 md:p-4">
+        <div className="aspect-square overflow-hidden bg-muted p-3 md:p-4 relative">
           {!imageLoaded && (
             <div className="w-full h-full flex items-center justify-center bg-muted animate-pulse">
               <div className="w-8 h-8 rounded-full border-2 border-muted-foreground/30"></div>
             </div>
           )}
-          <img
-            src={product.images[0]}
-            alt={title}
-            loading="lazy"
-            onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          />
+          {images[activeImageIndex] && (
+            <img
+              src={images[activeImageIndex]}
+              alt={title}
+              loading="lazy"
+              onLoad={() => setImageLoaded(true)}
+              className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+
+          {hasMultipleImages && (
+            <>
+              <button
+                type="button"
+                onClick={goToPreviousImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={t('Imagem anterior', 'Previous image')}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={goToNextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={t('Próxima imagem', 'Next image')}
+              >
+                ›
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Product info - compact */}
         <div className="p-3 md:p-4 space-y-1">
           <h3 className="font-serif text-sm md:text-base leading-tight tracking-tight line-clamp-2">
             {title}

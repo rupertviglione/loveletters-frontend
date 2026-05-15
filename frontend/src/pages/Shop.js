@@ -64,6 +64,10 @@ const Shop = () => {
 
   const filteredProducts = selectedCategory === 'tshirts' && selectedTshirtSubcategory !== 'all'
     ? products.filter((product) => {
+        if (product.subcategory) {
+          return product.subcategory === selectedTshirtSubcategory;
+        }
+
         const searchableTitle = `${product.title_pt || ''} ${product.title_en || ''}`.toLowerCase();
         const matchers = tshirtSubcategoryMatchers[selectedTshirtSubcategory] || [];
         return matchers.some((matcher) => searchableTitle.includes(matcher));
