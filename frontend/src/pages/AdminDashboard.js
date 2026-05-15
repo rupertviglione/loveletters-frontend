@@ -2,6 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Package, ShoppingBag, Mail, Plus, Edit, Trash2 } from 'lucide-react';
 
+const TSHIRT_SUBCATEGORIES = [
+  { id: 'o-poema-e-tu', label: 'O poema e tu' },
+  { id: 'era-uma-vez', label: 'Era uma vez' },
+  { id: 'write-that-love-letter', label: 'Write that love letter' },
+  { id: 'dare-to', label: 'Dare to' }
+];
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
@@ -238,7 +245,9 @@ const AdminDashboard = () => {
                             )}
                             <div className="flex-1">
                               <h3 className="font-bold">{product.title_pt}</h3>
-                              <p className="text-sm text-gray-600">{product.category}</p>
+                              <p className="text-sm text-gray-600">
+                                {product.category}{product.subcategory ? ` · ${product.subcategory}` : ''}
+                              </p>
                               <p className="text-accent font-bold mt-1">€{product.price.toFixed(2)}</p>
                             </div>
                             <div className="flex gap-2">
@@ -353,7 +362,8 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
     images: [],
     variants: null,
     is_bundle: false,
-    bundle_items: null
+    bundle_items: null,
+    subcategory: ''
   });
   const [imageUrl, setImageUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -463,7 +473,11 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
           <label className="block text-sm font-medium mb-2">Categoria</label>
           <select
             value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            onChange={(e) => setFormData({
+              ...formData,
+              category: e.target.value,
+              subcategory: e.target.value === 'tshirts' ? formData.subcategory || '' : ''
+            })}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
           >
@@ -475,6 +489,23 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
             <option value="rascunhos">Rascunhos</option>
           </select>
         </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Subcategoria (T-shirts)</label>
+          <select
+            value={formData.subcategory || ''}
+            onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+            disabled={formData.category !== 'tshirts'}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent disabled:bg-gray-100 disabled:text-gray-500"
+          >
+            <option value="">Sem subcategoria</option>
+            {TSHIRT_SUBCATEGORIES.map((subcategory) => (
+              <option key={subcategory.id} value={subcategory.id}>
+                {subcategory.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-2">Preço (€)</label>
           <input

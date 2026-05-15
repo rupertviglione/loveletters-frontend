@@ -16,11 +16,27 @@ const categories = [
   { id: 'rascunhos', pt: 'Rascunhos', en: 'Drafts' }
 ];
 
+const tshirtSubcategories = [
+  { id: 'all', pt: 'Todas', en: 'All' },
+  { id: 'o-poema-e-tu', pt: 'O poema e tu', en: 'O poema e tu' },
+  { id: 'era-uma-vez', pt: 'Era uma vez', en: 'Era uma vez' },
+  { id: 'write-that-love-letter', pt: 'Write that love letter', en: 'Write that love letter' },
+  { id: 'dare-to', pt: 'Dare to', en: 'Dare to' }
+];
+
+const tshirtSubcategoryMatchers = {
+  'o-poema-e-tu': ['o poema e tu'],
+  'era-uma-vez': ['era uma vez'],
+  'write-that-love-letter': ['write that love letter'],
+  'dare-to': ['dare to']
+};
+
 const Shop = () => {
   const { language, t } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('tshirts');
+  const [selectedTshirtSubcategory, setSelectedTshirtSubcategory] = useState('all');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -39,6 +55,24 @@ const Shop = () => {
 
     fetchProducts();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (selectedCategory !== 'tshirts') {
+      setSelectedTshirtSubcategory('all');
+    }
+  }, [selectedCategory]);
+
+  const filteredProducts = selectedCategory === 'tshirts' && selectedTshirtSubcategory !== 'all'
+    ? products.filter((product) => {
+        if (product.subcategory) {
+          return product.subcategory === selectedTshirtSubcategory;
+        }
+
+        const searchableTitle = `${product.title_pt || ''} ${product.title_en || ''}`.toLowerCase();
+        const matchers = tshirtSubcategoryMatchers[selectedTshirtSubcategory] || [];
+        return matchers.some((matcher) => searchableTitle.includes(matcher));
+      })
+    : products;
 
   return (
     <div className="min-h-screen pt-16 md:pt-20 overflow-x-hidden" data-testid="shop-page">
@@ -79,6 +113,27 @@ const Shop = () => {
         </div>
       </div>
 
+      {selectedCategory === 'tshirts' && (
+        <div className="border-b border-border py-3 md:py-4 px-4 md:px-8 lg:px-12 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 md:gap-3 flex-wrap md:flex-nowrap">
+            {tshirtSubcategories.map((subcategory) => (
+              <button
+                key={subcategory.id}
+                onClick={() => setSelectedTshirtSubcategory(subcategory.id)}
+                className={`px-3 md:px-5 py-1.5 md:py-2 border tracking-wide text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] ${
+                  selectedTshirtSubcategory === subcategory.id
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-transparent border-border hover:border-foreground hover:text-foreground'
+                }`}
+                data-testid={`tshirt-subcategory-filter-${subcategory.id}`}
+              >
+                {language === 'pt' ? subcategory.pt : subcategory.en}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {selectedCategory === 'rascunhos' && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -106,14 +161,14 @@ const Shop = () => {
       ) : (
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 md:py-12">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
       )}
 
-      {!loading && products.length === 0 && (
+      {!loading && filteredProducts.length === 0 && (
         <div className="text-center py-24 px-4">
           <p className="font-serif text-xl text-muted-foreground italic">
             {t('Nenhum produto encontrado.', 'No products found.')}
