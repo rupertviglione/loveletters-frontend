@@ -146,7 +146,6 @@ const Shop = () => {
               {t('← Voltar às colecções', '← Back to collections')}
             </button>
           )}
-          </div>
         </div>
       )}
 
