@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Package, ShoppingBag, Mail, Plus, Edit, Trash2 } from 'lucide-react';
 
-const TSHIRT_SUBCATEGORIES = [
+const COLLECTION_SUBCATEGORIES = [
   { id: 'o-poema-e-tu', label: 'O poema e tu' },
   { id: 'era-uma-vez', label: 'Era uma vez' },
   { id: 'write-that-love-letter', label: 'Write that love letter' },
@@ -476,7 +476,7 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
             onChange={(e) => setFormData({
               ...formData,
               category: e.target.value,
-              subcategory: e.target.value === 'tshirts' ? formData.subcategory || '' : ''
+              subcategory: ['tshirts', 'totebags'].includes(e.target.value) ? formData.subcategory || '' : ''
             })}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
@@ -490,15 +490,15 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Subcategoria (T-shirts)</label>
+          <label className="block text-sm font-medium mb-2">Subcategoria (T-shirts / Tote Bags)</label>
           <select
             value={formData.subcategory || ''}
             onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-            disabled={formData.category !== 'tshirts'}
+            disabled={!['tshirts', 'totebags'].includes(formData.category)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent disabled:bg-gray-100 disabled:text-gray-500"
           >
             <option value="">Sem subcategoria</option>
-            {TSHIRT_SUBCATEGORIES.map((subcategory) => (
+            {COLLECTION_SUBCATEGORIES.map((subcategory) => (
               <option key={subcategory.id} value={subcategory.id}>
                 {subcategory.label}
               </option>
