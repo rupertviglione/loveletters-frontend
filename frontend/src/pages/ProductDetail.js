@@ -8,6 +8,8 @@ import { ArrowLeft } from 'lucide-react';
 import SEO from '@/components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const APPAREL_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+const APPAREL_COLORS = ['white', 'black', 'red', 'blue', 'pink', 'yellow', 'ochre-brown'];
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -26,12 +28,12 @@ const ProductDetail = () => {
         const response = await axios.get(`${API}/products/${id}`);
         setProduct(response.data);
         
-        if (response.data.variants?.sizes) {
-          setSelectedSize(response.data.variants.sizes[0]);
-        }
-        if (response.data.variants?.colors) {
-          setSelectedColor(response.data.variants.colors[0]);
-        }
+        const isApparel = ['tshirts', 'totebags'].includes(response.data.category);
+        const availableSizes = response.data.variants?.sizes?.length ? response.data.variants.sizes : (response.data.category === 'tshirts' ? APPAREL_SIZES : []);
+        const availableColors = response.data.variants?.colors?.length ? response.data.variants.colors : (isApparel ? APPAREL_COLORS : []);
+
+        if (availableSizes.length) setSelectedSize(availableSizes[0]);
+        if (availableColors.length) setSelectedColor(availableColors[0]);
       } catch (error) {
         console.error('Error fetching product:', error);
       } finally {
@@ -76,6 +78,9 @@ const ProductDetail = () => {
 
   const title = language === 'pt' ? product.title_pt : product.title_en;
   const description = language === 'pt' ? product.description_pt : product.description_en;
+  const isApparel = ['tshirts', 'totebags'].includes(product.category);
+  const availableSizes = product.variants?.sizes?.length ? product.variants.sizes : (product.category === 'tshirts' ? APPAREL_SIZES : []);
+  const availableColors = product.variants?.colors?.length ? product.variants.colors : (isApparel ? APPAREL_COLORS : []);
 
   return (
     <div className="min-h-screen pt-24 md:pt-32" data-testid="product-detail-page">
@@ -161,13 +166,13 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {product.variants?.sizes && (
+            {availableSizes.length > 0 && (
               <div>
                 <label className="font-archivo font-bold text-sm uppercase tracking-wider block mb-3">
                   {t('Tamanho:', 'Size:')}
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants.sizes.map((size) => (
+                  {availableSizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -185,13 +190,13 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {product.variants?.colors && (
+            {availableColors.length > 0 && (
               <div>
                 <label className="font-archivo font-bold text-sm uppercase tracking-wider block mb-3">
                   {t('Cor:', 'Color:')}
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants.colors.map((color) => (
+                  {availableColors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
@@ -203,8 +208,8 @@ const ProductDetail = () => {
                       data-testid={`color-option-${color}`}
                     >
                       {t(
-                        color === 'white' ? 'Branco' : color === 'black' ? 'Preto' : color === 'red' ? 'Vermelho' : color === 'beige' ? 'Cru' : color,
-                        color.charAt(0).toUpperCase() + color.slice(1)
+                        color === 'white' ? 'Branco' : color === 'black' ? 'Preto' : color === 'red' ? 'Vermelho' : color === 'blue' ? 'Azul' : color === 'pink' ? 'Rosa' : color === 'yellow' ? 'Amarelo' : color === 'ochre-brown' ? 'Castanho ocre' : color,
+                        color === 'ochre-brown' ? 'Ochre Brown' : color.charAt(0).toUpperCase() + color.slice(1)
                       )}
                     </button>
                   ))}
