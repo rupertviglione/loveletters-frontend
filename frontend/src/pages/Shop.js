@@ -23,12 +23,14 @@ const collectionFilters = [
   { id: 'dare-to', pt: 'Dare to', en: 'Dare to' }
 ];
 
-const collectionImages = {
-  'o-poema-e-tu': 'https://drive.google.com/uc?export=view&id=1nK0rT5zo--1uF5VbzFZuQcqGy_lW_ecY',
-  'era-uma-vez': 'https://drive.google.com/uc?export=view&id=189Aphnrmx4AnoGA-SqcjIvd9PftbLfS5',
-  'write-that-love-letter': 'https://drive.google.com/uc?export=view&id=1S0mr3B1jhCGon9DJwp14yfRKFz6NVyFN',
-  'dare-to': 'https://drive.google.com/uc?export=view&id=10FF_vCtUYFF5UT25A1sF65nUL4YAS6Yu'
+const collectionImageIds = {
+  'o-poema-e-tu': '1nK0rT5zo--1uF5VbzFZuQcqGy_lW_ecY',
+  'era-uma-vez': '189Aphnrmx4AnoGA-SqcjIvd9PftbLfS5',
+  'write-that-love-letter': '1S0mr3B1jhCGon9DJwp14yfRKFz6NVyFN',
+  'dare-to': '10FF_vCtUYFF5UT25A1sF65nUL4YAS6Yu'
 };
+
+const getDriveImageUrl = (fileId) => `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
 
 const tshirtSubcategoryMatchers = {
   'o-poema-e-tu': ['o poema e tu'],
@@ -79,6 +81,8 @@ const Shop = () => {
         return matchers.some((matcher) => searchableTitle.includes(matcher));
       })
     : products;
+
+  const shouldShowProductGrid = !['tshirts', 'totebags'].includes(selectedCategory) || Boolean(selectedCollection);
 
   return (
     <div className="min-h-screen pt-16 md:pt-20 overflow-x-hidden" data-testid="shop-page">
@@ -131,7 +135,7 @@ const Shop = () => {
                   data-testid={`collection-image-${subcategory.id}`}
                 >
                   <div className="aspect-[4/5] border border-border overflow-hidden mb-2">
-                    <img src={collectionImages[subcategory.id]} alt={language === 'pt' ? subcategory.pt : subcategory.en} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <img src={getDriveImageUrl(collectionImageIds[subcategory.id])} alt={language === 'pt' ? subcategory.pt : subcategory.en} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <p className="font-bold text-xs md:text-sm uppercase tracking-wider">{language === 'pt' ? subcategory.pt : subcategory.en}</p>
                 </button>
@@ -173,7 +177,7 @@ const Shop = () => {
         <div className="flex items-center justify-center py-24">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
         </div>
-      ) : (
+      ) : shouldShowProductGrid ? (
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 md:py-12">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {filteredProducts.map((product) => (
@@ -181,9 +185,15 @@ const Shop = () => {
             ))}
           </div>
         </div>
+      ) : (
+        <div className="text-center py-20 px-4">
+          <p className="font-serif text-lg text-muted-foreground italic">
+            {t('Escolhe uma colecção para veres os produtos.', 'Choose a collection to see products.')}
+          </p>
+        </div>
       )}
 
-      {!loading && filteredProducts.length === 0 && (
+      {!loading && shouldShowProductGrid && filteredProducts.length === 0 && (
         <div className="text-center py-24 px-4">
           <p className="font-serif text-xl text-muted-foreground italic">
             {t('Nenhum produto encontrado.', 'No products found.')}
