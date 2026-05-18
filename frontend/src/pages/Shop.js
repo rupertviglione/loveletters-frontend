@@ -25,9 +25,9 @@ const collectionFilters = [
 
 const collectionImageIds = {
   'o-poema-e-tu': '1nK0rT5zo--1uF5VbzFZuQcqGy_lW_ecY',
-  'era-uma-vez': '189Aphnrmx4AnoGA-SqcjIvd9PftbLfS5',
+  'era-uma-vez': '10FF_vCtUYFF5UT25A1sF65nUL4YAS6Yu',
   'write-that-love-letter': '1S0mr3B1jhCGon9DJwp14yfRKFz6NVyFN',
-  'dare-to': '10FF_vCtUYFF5UT25A1sF65nUL4YAS6Yu'
+  'dare-to': '189Aphnrmx4AnoGA-SqcjIvd9PftbLfS5'
 };
 
 const getDriveImageUrl = (fileId) => `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
