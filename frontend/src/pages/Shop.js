@@ -16,13 +16,19 @@ const categories = [
   { id: 'rascunhos', pt: 'Rascunhos', en: 'Drafts' }
 ];
 
-const tshirtSubcategories = [
-  { id: 'all', pt: 'Todas', en: 'All' },
+const collectionFilters = [
   { id: 'o-poema-e-tu', pt: 'O poema e tu', en: 'O poema e tu' },
   { id: 'era-uma-vez', pt: 'Era uma vez', en: 'Era uma vez' },
   { id: 'write-that-love-letter', pt: 'Write that love letter', en: 'Write that love letter' },
   { id: 'dare-to', pt: 'Dare to', en: 'Dare to' }
 ];
+
+const collectionImages = {
+  'o-poema-e-tu': 'https://drive.google.com/uc?export=view&id=1nK0rT5zo--1uF5VbzFZuQcqGy_lW_ecY',
+  'era-uma-vez': 'https://drive.google.com/uc?export=view&id=189Aphnrmx4AnoGA-SqcjIvd9PftbLfS5',
+  'write-that-love-letter': 'https://drive.google.com/uc?export=view&id=1S0mr3B1jhCGon9DJwp14yfRKFz6NVyFN',
+  'dare-to': 'https://drive.google.com/uc?export=view&id=10FF_vCtUYFF5UT25A1sF65nUL4YAS6Yu'
+};
 
 const tshirtSubcategoryMatchers = {
   'o-poema-e-tu': ['o poema e tu'],
@@ -36,7 +42,7 @@ const Shop = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('tshirts');
-  const [selectedTshirtSubcategory, setSelectedTshirtSubcategory] = useState('all');
+  const [selectedCollection, setSelectedCollection] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -57,19 +63,19 @@ const Shop = () => {
   }, [selectedCategory]);
 
   useEffect(() => {
-    if (selectedCategory !== 'tshirts') {
-      setSelectedTshirtSubcategory('all');
+    if (!['tshirts', 'totebags'].includes(selectedCategory)) {
+      setSelectedCollection('');
     }
   }, [selectedCategory]);
 
-  const filteredProducts = selectedCategory === 'tshirts' && selectedTshirtSubcategory !== 'all'
+  const filteredProducts = ['tshirts', 'totebags'].includes(selectedCategory) && selectedCollection
     ? products.filter((product) => {
         if (product.subcategory) {
-          return product.subcategory === selectedTshirtSubcategory;
+          return product.subcategory === selectedCollection;
         }
 
         const searchableTitle = `${product.title_pt || ''} ${product.title_en || ''}`.toLowerCase();
-        const matchers = tshirtSubcategoryMatchers[selectedTshirtSubcategory] || [];
+        const matchers = tshirtSubcategoryMatchers[selectedCollection] || [];
         return matchers.some((matcher) => searchableTitle.includes(matcher));
       })
     : products;
@@ -113,24 +119,33 @@ const Shop = () => {
         </div>
       </div>
 
-      {selectedCategory === 'tshirts' && (
+      {['tshirts', 'totebags'].includes(selectedCategory) && (
         <div className="border-b border-border py-3 md:py-4 px-4 md:px-8 lg:px-12 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 md:gap-3 flex-wrap md:flex-nowrap">
-            {tshirtSubcategories.map((subcategory) => (
-              <button
-                key={subcategory.id}
-                onClick={() => setSelectedTshirtSubcategory(subcategory.id)}
-                className={`px-3 md:px-5 py-1.5 md:py-2 border tracking-wide text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] ${
-                  selectedTshirtSubcategory === subcategory.id
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'bg-transparent border-border hover:border-foreground hover:text-foreground'
-                }`}
-                data-testid={`tshirt-subcategory-filter-${subcategory.id}`}
-              >
-                {language === 'pt' ? subcategory.pt : subcategory.en}
-              </button>
-            ))}
-          </div>
+          {!selectedCollection ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              {collectionFilters.map((subcategory) => (
+                <button
+                  key={subcategory.id}
+                  onClick={() => setSelectedCollection(subcategory.id)}
+                  className="group text-left"
+                  data-testid={`collection-image-${subcategory.id}`}
+                >
+                  <div className="aspect-[4/5] border border-border overflow-hidden mb-2">
+                    <img src={collectionImages[subcategory.id]} alt={language === 'pt' ? subcategory.pt : subcategory.en} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <p className="font-bold text-xs md:text-sm uppercase tracking-wider">{language === 'pt' ? subcategory.pt : subcategory.en}</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={() => setSelectedCollection('')}
+              className="px-3 md:px-5 py-1.5 md:py-2 border tracking-wide text-[10px] md:text-xs font-bold transition-all duration-300 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] bg-transparent border-border hover:border-foreground hover:text-foreground"
+              data-testid="collection-back-button"
+            >
+              {t('← Voltar às colecções', '← Back to collections')}
+            </button>
+          )}
         </div>
       )}
 
