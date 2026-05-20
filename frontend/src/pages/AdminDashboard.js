@@ -58,9 +58,15 @@ const AdminDashboard = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      setOrders(data);
+      const normalizedOrders = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.orders)
+          ? data.orders
+          : [];
+      setOrders(normalizedOrders);
     } catch (err) {
       console.error('Error fetching orders:', err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -346,10 +352,10 @@ const AdminDashboard = () => {
                     <div className="space-y-4">
                       {orders.map(order => (
                         <div
-                          key={order.id}
+                          key={order.id || order._id || order.order_number}
                           className={`p-4 border rounded-lg cursor-pointer transition-colors ${order.seen_by_admin === false ? 'border-red-300 bg-red-50/40' : 'border-gray-200'}`}
                           onClick={() => {
-                            if (order.seen_by_admin === false) {
+                            if (order.seen_by_admin === false && order.id) {
                               markOrderAsSeen(order.id);
                             }
                           }}
@@ -365,7 +371,7 @@ const AdminDashboard = () => {
                               <p className="text-sm text-gray-600">{order.customer_name} ({order.customer_email})</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-accent">€{order.total.toFixed(2)}</p>
+                              <p className="font-bold text-accent">€{Number(order.total || 0).toFixed(2)}</p>
                               <span className={`text-xs px-2 py-1 rounded ${
                                 order.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                               }`}>
@@ -375,14 +381,17 @@ const AdminDashboard = () => {
                           </div>
                           <div className="mt-3 pt-3 border-t border-gray-200">
                             <p className="text-sm font-medium mb-2">Produtos:</p>
-                            {order.items.map((item, idx) => (
+                            {(order.items || []).map((item, idx) => (
                               <p key={idx} className="text-sm text-gray-600">
-                                {item.quantity}x {item.title} - €{item.price.toFixed(2)}
+                                {item.quantity}x {item.title} - €{Number(item.price || 0).toFixed(2)}
                               </p>
                             ))}
                           </div>
                         </div>
                       ))}
+                      {orders.length === 0 && (
+                        <p className="text-gray-500 italic">Sem encomendas para mostrar.</p>
+                      )}
                     </div>
                   </div>
                 )}
