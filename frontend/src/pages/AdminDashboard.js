@@ -17,6 +17,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [unseenOrders, setUnseenOrders] = useState(0);
+  const [lastNotifiedUnseen, setLastNotifiedUnseen] = useState(0);
   const navigate = useNavigate();
   
   const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -79,6 +81,42 @@ const AdminDashboard = () => {
     }
   }, [API_URL, token]);
 
+  const fetchOrdersSummary = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/summary`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const unseen = Number(data?.unseen_orders || 0);
+      setUnseenOrders(unseen);
+      if (unseen > 0 && unseen > lastNotifiedUnseen) {
+        setLastNotifiedUnseen(unseen);
+      }
+    } catch (err) {
+      console.error('Error fetching orders summary:', err);
+    }
+  }, [API_URL, token, lastNotifiedUnseen]);
+
+  const markOrderAsSeen = useCallback(async (orderId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/seen`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) return;
+
+      setOrders((prev) => prev.map((order) => (
+        order.id === orderId ? { ...order, seen_by_admin: true } : order
+      )));
+      setUnseenOrders((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking order as seen:', err);
+    }
+  }, [API_URL, token]);
+
   useEffect(() => {
     if (!token) {
       navigate('/admin/login');
@@ -92,6 +130,20 @@ const AdminDashboard = () => {
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'contacts') fetchContacts();
   }, [activeTab, fetchProducts, fetchOrders, fetchContacts]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetchOrdersSummary();
+    const interval = setInterval(fetchOrdersSummary, 30000);
+    const onFocus = () => fetchOrdersSummary();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [token, fetchOrdersSummary]);
 
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm('Tem a certeza que quer eliminar este produto?')) return;
@@ -177,6 +229,11 @@ const AdminDashboard = () => {
             >
               <ShoppingBag size={20} />
               <span>ENCOMENDAS</span>
+              {unseenOrders > 0 && (
+                <span className="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] leading-5 text-center font-bold">
+                  {unseenOrders}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('contacts')}
@@ -193,6 +250,12 @@ const AdminDashboard = () => {
 
           {/* Content */}
           <div className="p-6">
+            {unseenOrders > 0 && (
+              <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                {unseenOrders} nova(s) encomenda(s) por ver.
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -282,10 +345,23 @@ const AdminDashboard = () => {
                     <h2 className="text-xl font-syne font-bold mb-6">Encomendas ({orders.length})</h2>
                     <div className="space-y-4">
                       {orders.map(order => (
-                        <div key={order.id} className="p-4 border border-gray-200 rounded-lg">
+                        <div
+                          key={order.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${order.seen_by_admin === false ? 'border-red-300 bg-red-50/40' : 'border-gray-200'}`}
+                          onClick={() => {
+                            if (order.seen_by_admin === false) {
+                              markOrderAsSeen(order.id);
+                            }
+                          }}
+                        >
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <h3 className="font-bold">{order.order_number}</h3>
+                              <h3 className="font-bold flex items-center gap-2">
+                                {order.order_number}
+                                {order.seen_by_admin === false && (
+                                  <span className="text-[10px] uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">novo</span>
+                                )}
+                              </h3>
                               <p className="text-sm text-gray-600">{order.customer_name} ({order.customer_email})</p>
                             </div>
                             <div className="text-right">
