@@ -187,6 +187,68 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleOrderStatusChange = async (orderId, nextStatus) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível atualizar o estado da encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.map((order) => (
+        order.id === orderId ? { ...order, status: nextStatus } : order
+      )));
+    } catch (err) {
+      alert('Erro ao atualizar encomenda');
+    }
+  };
+
+  const handleArchiveOrder = async (orderId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível arquivar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (err) {
+      alert('Erro ao arquivar encomenda');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Tem a certeza que quer apagar esta encomenda?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível apagar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (err) {
+      alert('Erro ao apagar encomenda');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     navigate('/admin/login');
@@ -380,6 +442,46 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Estado:</label>
+                                <select
+                                  value={order.status || 'pending'}
+                                  onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 py-1 text-xs border border-gray-300 rounded"
+                                >
+                                  <option value="pending">Pendente</option>
+                                  <option value="processing">Em processamento</option>
+                                  <option value="shipping">Em envio</option>
+                                  <option value="completed">Terminado</option>
+                                </select>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleArchiveOrder(order.id);
+                                  }}
+                                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                                >
+                                  Arquivar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteOrder(order.id);
+                                  }}
+                                  className="px-2 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50"
+                                >
+                                  Apagar
+                                </button>
+                              </div>
+                            </div>
+
                             <p className="text-sm font-medium mb-2">Produtos:</p>
                             {(order.items || []).map((item, idx) => (
                               <p key={idx} className="text-sm text-gray-600">
