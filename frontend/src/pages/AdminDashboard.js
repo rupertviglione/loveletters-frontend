@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Package, ShoppingBag, Mail, Plus, Edit, Trash2 } from 'lucide-react';
 
-const TSHIRT_SUBCATEGORIES = [
+const COLLECTION_SUBCATEGORIES = [
   { id: 'o-poema-e-tu', label: 'O poema e tu' },
   { id: 'era-uma-vez', label: 'Era uma vez' },
   { id: 'write-that-love-letter', label: 'Write that love letter' },
@@ -17,6 +17,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [unseenOrders, setUnseenOrders] = useState(0);
+  const [lastNotifiedUnseen, setLastNotifiedUnseen] = useState(0);
   const navigate = useNavigate();
   
   const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -56,9 +58,15 @@ const AdminDashboard = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      setOrders(data);
+      const normalizedOrders = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.orders)
+          ? data.orders
+          : [];
+      setOrders(normalizedOrders);
     } catch (err) {
       console.error('Error fetching orders:', err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -79,6 +87,42 @@ const AdminDashboard = () => {
     }
   }, [API_URL, token]);
 
+  const fetchOrdersSummary = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/summary`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const unseen = Number(data?.unseen_orders || 0);
+      setUnseenOrders(unseen);
+      if (unseen > 0 && unseen > lastNotifiedUnseen) {
+        setLastNotifiedUnseen(unseen);
+      }
+    } catch (err) {
+      console.error('Error fetching orders summary:', err);
+    }
+  }, [API_URL, token, lastNotifiedUnseen]);
+
+  const markOrderAsSeen = useCallback(async (orderId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/seen`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) return;
+
+      setOrders((prev) => prev.map((order) => (
+        order.id === orderId ? { ...order, seen_by_admin: true } : order
+      )));
+      setUnseenOrders((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking order as seen:', err);
+    }
+  }, [API_URL, token]);
+
   useEffect(() => {
     if (!token) {
       navigate('/admin/login');
@@ -92,6 +136,20 @@ const AdminDashboard = () => {
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'contacts') fetchContacts();
   }, [activeTab, fetchProducts, fetchOrders, fetchContacts]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetchOrdersSummary();
+    const interval = setInterval(fetchOrdersSummary, 30000);
+    const onFocus = () => fetchOrdersSummary();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [token, fetchOrdersSummary]);
 
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm('Tem a certeza que quer eliminar este produto?')) return;
@@ -126,6 +184,68 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       alert('Erro ao eliminar mensagem');
+    }
+  };
+
+  const handleOrderStatusChange = async (orderId, nextStatus) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível atualizar o estado da encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.map((order) => (
+        order.id === orderId ? { ...order, status: nextStatus } : order
+      )));
+    } catch (err) {
+      alert('Erro ao atualizar encomenda');
+    }
+  };
+
+  const handleArchiveOrder = async (orderId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível arquivar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (err) {
+      alert('Erro ao arquivar encomenda');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Tem a certeza que quer apagar esta encomenda?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível apagar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (err) {
+      alert('Erro ao apagar encomenda');
     }
   };
 
@@ -177,6 +297,11 @@ const AdminDashboard = () => {
             >
               <ShoppingBag size={20} />
               <span>ENCOMENDAS</span>
+              {unseenOrders > 0 && (
+                <span className="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] leading-5 text-center font-bold">
+                  {unseenOrders}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('contacts')}
@@ -193,6 +318,12 @@ const AdminDashboard = () => {
 
           {/* Content */}
           <div className="p-6">
+            {unseenOrders > 0 && (
+              <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                {unseenOrders} nova(s) encomenda(s) por ver.
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -282,14 +413,27 @@ const AdminDashboard = () => {
                     <h2 className="text-xl font-syne font-bold mb-6">Encomendas ({orders.length})</h2>
                     <div className="space-y-4">
                       {orders.map(order => (
-                        <div key={order.id} className="p-4 border border-gray-200 rounded-lg">
+                        <div
+                          key={order.id || order._id || order.order_number}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${order.seen_by_admin === false ? 'border-red-300 bg-red-50/40' : 'border-gray-200'}`}
+                          onClick={() => {
+                            if (order.seen_by_admin === false && order.id) {
+                              markOrderAsSeen(order.id);
+                            }
+                          }}
+                        >
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <h3 className="font-bold">{order.order_number}</h3>
+                              <h3 className="font-bold flex items-center gap-2">
+                                {order.order_number}
+                                {order.seen_by_admin === false && (
+                                  <span className="text-[10px] uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">novo</span>
+                                )}
+                              </h3>
                               <p className="text-sm text-gray-600">{order.customer_name} ({order.customer_email})</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-accent">€{order.total.toFixed(2)}</p>
+                              <p className="font-bold text-accent">€{Number(order.total || 0).toFixed(2)}</p>
                               <span className={`text-xs px-2 py-1 rounded ${
                                 order.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                               }`}>
@@ -298,15 +442,58 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Estado:</label>
+                                <select
+                                  value={order.status || 'pending'}
+                                  onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 py-1 text-xs border border-gray-300 rounded"
+                                >
+                                  <option value="pending">Pendente</option>
+                                  <option value="processing">Em processamento</option>
+                                  <option value="shipping">Em envio</option>
+                                  <option value="completed">Terminado</option>
+                                </select>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleArchiveOrder(order.id);
+                                  }}
+                                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                                >
+                                  Arquivar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteOrder(order.id);
+                                  }}
+                                  className="px-2 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50"
+                                >
+                                  Apagar
+                                </button>
+                              </div>
+                            </div>
+
                             <p className="text-sm font-medium mb-2">Produtos:</p>
-                            {order.items.map((item, idx) => (
+                            {(order.items || []).map((item, idx) => (
                               <p key={idx} className="text-sm text-gray-600">
-                                {item.quantity}x {item.title} - €{item.price.toFixed(2)}
+                                {item.quantity}x {item.title} - €{Number(item.price || 0).toFixed(2)}
                               </p>
                             ))}
                           </div>
                         </div>
                       ))}
+                      {orders.length === 0 && (
+                        <p className="text-gray-500 italic">Sem encomendas para mostrar.</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -476,7 +663,7 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
             onChange={(e) => setFormData({
               ...formData,
               category: e.target.value,
-              subcategory: e.target.value === 'tshirts' ? formData.subcategory || '' : ''
+              subcategory: ['tshirts', 'totebags'].includes(e.target.value) ? formData.subcategory || '' : ''
             })}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
@@ -490,15 +677,15 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Subcategoria (T-shirts)</label>
+          <label className="block text-sm font-medium mb-2">Subcategoria (T-shirts / Tote Bags)</label>
           <select
             value={formData.subcategory || ''}
             onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-            disabled={formData.category !== 'tshirts'}
+            disabled={!['tshirts', 'totebags'].includes(formData.category)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent disabled:bg-gray-100 disabled:text-gray-500"
           >
             <option value="">Sem subcategoria</option>
-            {TSHIRT_SUBCATEGORIES.map((subcategory) => (
+            {COLLECTION_SUBCATEGORIES.map((subcategory) => (
               <option key={subcategory.id} value={subcategory.id}>
                 {subcategory.label}
               </option>
