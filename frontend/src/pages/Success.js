@@ -7,6 +7,7 @@ import { CheckCircle, Loader, AlertCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const CONTACT_EMAIL = 'hello@weloveloveletters.com';
 
 const Success = () => {
   const { t } = useLanguage();
@@ -93,7 +94,7 @@ const Success = () => {
         </p>
         <div className="flex gap-4">
           <button
-            onClick={() => navigate('/contact')}
+            onClick={() => { window.location.href = `mailto:${CONTACT_EMAIL}`; }}
             className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
           >
             {t('Contactar', 'Contact us')}

@@ -2,6 +2,8 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
+const CONTACT_EMAIL = 'hello@weloveloveletters.com';
+
 const ShippingReturns = () => {
   const { t } = useLanguage();
 
@@ -32,8 +34,8 @@ const ShippingReturns = () => {
             </h2>
             <p className="font-fraunces text-base md:text-lg leading-relaxed">
               {t(
-                'Processamos as encomendas em 2 a 4 dias úteis. Os custos de envio aparecem no checkout e variam conforme o destino.',
-                'We process orders within 2 to 4 business days. Shipping costs are shown at checkout and vary by destination.'
+                'Processamos as encomendas em 2 a 4 dias úteis. O envio é gratuito para Portugal Continental.',
+                'We process orders within 2 to 4 business days. Shipping is free for mainland Portugal.'
               )}
             </p>
             <p className="font-fraunces text-base md:text-lg leading-relaxed">
@@ -75,9 +77,10 @@ const ShippingReturns = () => {
           >
             <p className="font-fraunces text-base md:text-lg leading-relaxed">
               {t(
-                'Para qualquer dúvida, usa a página de contacto.',
-                'For any questions, use the contact page.'
+                'Para compras fora de Portugal ou qualquer dúvida, escreve para ',
+                'For purchases outside Portugal or any questions, email '
               )}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent underline">{CONTACT_EMAIL}</a>.
             </p>
           </motion.section>
         </div>
