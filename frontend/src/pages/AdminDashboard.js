@@ -409,6 +409,92 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleOrderStatusChange = async (orderId, nextStatus) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível atualizar o estado da encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.map((order) => (
+        (order.id === orderId || order._id === orderId) ? { ...order, status: nextStatus } : order
+      )));
+    } catch (err) {
+      alert('Erro ao atualizar encomenda');
+    }
+  };
+
+  const handleOrderTrackingChange = async (orderId, trackingNumber) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/tracking`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tracking_number: trackingNumber })
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível atualizar o tracking da encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.map((order) => (
+        (order.id === orderId || order._id === orderId) ? { ...order, tracking_number: trackingNumber } : order
+      )));
+    } catch (err) {
+      alert('Erro ao atualizar tracking');
+    }
+  };
+
+  const handleArchiveOrder = async (orderId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível arquivar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId && order._id !== orderId));
+    } catch (err) {
+      alert('Erro ao arquivar encomenda');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Tem a certeza que quer apagar esta encomenda?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        alert('Não foi possível apagar a encomenda.');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((order) => order.id !== orderId && order._id !== orderId));
+    } catch (err) {
+      alert('Erro ao apagar encomenda');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     navigate("/admin/login");
