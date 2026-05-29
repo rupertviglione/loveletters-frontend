@@ -10,6 +10,7 @@ import SEO from '@/components/SEO';
 const API = process.env.REACT_APP_BACKEND_URL 
   ? `${process.env.REACT_APP_BACKEND_URL}/api`
   : '/api';
+const CONTACT_EMAIL = 'hello@weloveloveletters.com';
 
 const Contact = () => {
   const { t } = useLanguage();
@@ -31,7 +32,10 @@ const Contact = () => {
     
     try {
       setLoading(true);
-      await axios.post(`${API}/contact`, formData);
+      await axios.post(`${API}/contact`, {
+        ...formData,
+        to_email: CONTACT_EMAIL
+      });
       
       toast.success(
         t(
@@ -175,12 +179,17 @@ const Contact = () => {
           </div>
         </div>
 
-        <p className="text-center font-serif text-sm md:text-base italic text-muted-foreground mt-6 md:mt-8 px-4">
-          {t(
-            'Escreva-nos. As suas palavras são importantes.',
-            'Write to us. Your words matter.'
-          )}
-        </p>
+        <div className="text-center font-serif text-sm md:text-base italic text-muted-foreground mt-6 md:mt-8 px-4 space-y-2">
+          <p>
+            {t(
+              'Escreva-nos. As suas palavras são importantes.',
+              'Write to us. Your words matter.'
+            )}
+          </p>
+          <p>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent underline">{CONTACT_EMAIL}</a>
+          </p>
+        </div>
       </motion.div>
 
       {/* Red scrolling banner */}

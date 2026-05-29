@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Loader } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const CONTACT_EMAIL = 'hello@weloveloveletters.com';
 
 const Checkout = () => {
   const { t } = useLanguage();
@@ -17,7 +18,12 @@ const Checkout = () => {
   const submittingRef = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: ''
+    email: '',
+    address_line1: '',
+    address_line2: '',
+    postal_code: '',
+    city: '',
+    phone: ''
   });
 
   if (items.length === 0) {
@@ -45,6 +51,20 @@ const Checkout = () => {
       const orderResponse = await axios.post(`${API}/orders`, {
         customer_email: formData.email,
         customer_name: formData.name,
+        customer_phone: formData.phone,
+        shipping_address: {
+          line1: formData.address_line1,
+          line2: formData.address_line2,
+          postal_code: formData.postal_code,
+          city: formData.city,
+          country: 'PT',
+          region: 'Portugal Continental'
+        },
+        shipping_method: {
+          label: 'Envio Portugal Continental',
+          amount: 0,
+          currency: 'EUR'
+        },
         items: orderItems
       });
       
@@ -89,7 +109,7 @@ const Checkout = () => {
           className="bg-background p-6 md:p-12"
         >
           <h2 className="font-courier font-bold text-xl uppercase tracking-tight mb-8">
-            {t('Informacoes de contacto', 'Contact information')}
+            {t('Contacto e morada de envio', 'Contact and shipping address')}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -121,6 +141,111 @@ const Checkout = () => {
                 disabled={loading}
                 data-testid="checkout-email"
               />
+            </div>
+
+
+            <div className="pt-4 border-t border-border">
+              <h3 className="font-courier font-bold text-sm uppercase tracking-tight mb-4">
+                {t('Morada de envio', 'Shipping address')}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4 font-serif">
+                {t(
+                  'Envio gratuito para Portugal Continental. Para compras fora de Portugal, escreve para ',
+                  'Free shipping for mainland Portugal. For purchases outside Portugal, email '
+                )}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent underline">{CONTACT_EMAIL}</a>.
+              </p>
+              <div className="space-y-6">
+                <div>
+                  <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                    {t('Morada', 'Address')}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.address_line1}
+                    onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                    className="w-full px-0 py-3 bg-transparent border-0 border-b border-input focus:border-accent focus:outline-none font-mono transition-colors"
+                    disabled={loading}
+                    data-testid="checkout-address-line1"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                    {t('Apartamento, andar, etc. (opcional)', 'Apartment, floor, etc. (optional)')}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.address_line2}
+                    onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
+                    className="w-full px-0 py-3 bg-transparent border-0 border-b border-input focus:border-accent focus:outline-none font-mono transition-colors"
+                    disabled={loading}
+                    data-testid="checkout-address-line2"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                      {t('Código postal', 'Postal code')}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.postal_code}
+                      onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-input focus:border-accent focus:outline-none font-mono transition-colors"
+                      disabled={loading}
+                      data-testid="checkout-postal-code"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                      {t('Cidade', 'City')}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-input focus:border-accent focus:outline-none font-mono transition-colors"
+                      disabled={loading}
+                      data-testid="checkout-city"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                      {t('País / Região', 'Country / Region')}
+                    </label>
+                    <input
+                      type="text"
+                      value="Portugal Continental"
+                      readOnly
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-input text-muted-foreground font-mono"
+                      data-testid="checkout-country"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-courier font-bold text-xs uppercase tracking-wider block mb-2">
+                      {t('Telefone (opcional)', 'Phone (optional)')}
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-input focus:border-accent focus:outline-none font-mono transition-colors"
+                      disabled={loading}
+                      data-testid="checkout-phone"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {error && (
@@ -201,6 +326,15 @@ const Checkout = () => {
               </span>
               <span className="font-mono font-bold">
                 {getTotal().toFixed(2)}€
+              </span>
+            </div>
+
+            <div className="flex justify-between text-muted-foreground">
+              <span className="font-mono text-sm uppercase tracking-wider">
+                {t('Envio Portugal Continental', 'Mainland Portugal shipping')}
+              </span>
+              <span className="font-mono font-bold">
+                {t('Grátis', 'Free')}
               </span>
             </div>
 
