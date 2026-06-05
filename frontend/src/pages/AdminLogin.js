@@ -1,40 +1,32 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiFetch } from "@/services/api";
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
-  const API_URL = "https://loveletters-backend.onrender.com";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/login`, {
-        method: 'POST',
+      const data = await apiFetch("/admin/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Save token to localStorage
-        localStorage.setItem('admin_token', data.access_token);
-        navigate('/admin/dashboard');
-      } else {
-        setError(data.detail || 'Login failed');
-      }
+      localStorage.setItem("admin_token", data.access_token);
+      navigate("/admin/dashboard");
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError(err?.data?.detail || "Connection error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -44,11 +36,16 @@ const AdminLogin = () => {
     <div className="min-h-screen bg-beige flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-3xl font-syne font-bold text-center mb-2">ADMIN</h1>
-        <p className="text-center text-gray-600 mb-8">Love Letters Backoffice</p>
+        <p className="text-center text-gray-600 mb-8">
+          Love Letters Backoffice
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Username
             </label>
             <input
@@ -63,7 +60,10 @@ const AdminLogin = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Password
             </label>
             <input
@@ -88,7 +88,7 @@ const AdminLogin = () => {
             disabled={loading}
             className="w-full bg-accent text-white py-3 rounded-md font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'A ENTRAR...' : 'ENTRAR'}
+            {loading ? "A ENTRAR..." : "ENTRAR"}
           </button>
         </form>
       </div>

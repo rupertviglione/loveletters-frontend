@@ -1,6 +1,8 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const CONTACT_EMAIL = 'hello@weloveloveletters.com';
+
 const Footer = () => {
   const { t } = useLanguage();
 
@@ -18,6 +20,13 @@ const Footer = () => {
             className="hover:text-accent transition-colors"
           >
             Instagram
+          </a>
+          <span className="text-muted-foreground/30">·</span>
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="hover:text-accent transition-colors"
+          >
+            {CONTACT_EMAIL}
           </a>
           <span className="text-muted-foreground/30">·</span>
           <a
