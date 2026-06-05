@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "@/services/api";
 import {
   LogOut,
   Package,
@@ -65,43 +66,37 @@ const AdminDashboard = () => {
   const [savingOrderId, setSavingOrderId] = useState(null);
   const navigate = useNavigate();
 
-  const API_URL = process.env.REACT_APP_BACKEND_URL;
   const token = localStorage.getItem("admin_token");
 
   const verifyAuth = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/admin/verify`, {
+      await apiFetch("/admin/verify", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        localStorage.removeItem("admin_token");
-        navigate("/admin/login");
-      }
     } catch (err) {
+      localStorage.removeItem("admin_token");
       navigate("/admin/login");
     }
-  }, [API_URL, token, navigate]);
+  }, [token, navigate]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/products`);
-      const data = await response.json();
+      const data = await apiFetch("/products");
       setProducts(data);
     } catch (err) {
       console.error("Error fetching products:", err);
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/admin/orders`, {
+      const data = await apiFetch("/admin/orders", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
       const normalizedOrders = Array.isArray(data)
         ? data
         : Array.isArray(data?.orders)
@@ -126,15 +121,14 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/admin/contacts`, {
+      const data = await apiFetch("/admin/contacts", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
       const normalizedContacts = Array.isArray(data)
         ? data
         : Array.isArray(data?.contacts)
@@ -148,7 +142,73 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await apiFetch("/admin/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ordersCount = Number(data?.orders || 0);
+      const messagesCount = Number(data?.messages ?? data?.contacts ?? 0);
+      setUnseenOrders(ordersCount);
+      setUnseenContacts(messagesCount);
+      if (
+        ordersCount + messagesCount > 0 &&
+        ordersCount + messagesCount > lastNotifiedUnseen
+      ) {
+        setLastNotifiedUnseen(ordersCount + messagesCount);
+      }
+    } catch (err) {
+      console.error("Error fetching admin notifications:", err);
+    }
+  }, [token, lastNotifiedUnseen]);
+
+  const markContactAsSeen = useCallback(
+    async (contactId) => {
+      try {
+        await apiFetch(`/admin/contacts/${contactId}/mark-read`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setContacts((prev) =>
+          prev.map((contact) =>
+            getRecordId(contact) === contactId
+              ? { ...contact, seen_by_admin: true, read: true }
+              : contact,
+          ),
+        );
+        setUnseenContacts((prev) => Math.max(0, prev - 1));
+      } catch (err) {
+        console.error("Error marking contact as seen:", err);
+      }
+    },
+    [token],
+  );
+
+  const markOrderAsSeen = useCallback(
+    async (orderId) => {
+      try {
+        await apiFetch(`/admin/orders/${orderId}/mark-read`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setOrders((prev) =>
+          prev.map((order) =>
+            getRecordId(order) === orderId
+              ? { ...order, seen_by_admin: true, read: true }
+              : order,
+          ),
+        );
+        setUnseenOrders((prev) => Math.max(0, prev - 1));
+      } catch (err) {
+        console.error("Error marking order as seen:", err);
+      }
+    },
+    [token],
+  );
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -262,18 +322,12 @@ const AdminDashboard = () => {
       return;
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/admin/products/${productId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.ok) {
-        alert("Produto eliminado com sucesso!");
-        fetchProducts();
-      }
+      await apiFetch(`/admin/products/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Produto eliminado com sucesso!");
+      fetchProducts();
     } catch (err) {
       alert("Erro ao eliminar produto");
     }
@@ -284,18 +338,12 @@ const AdminDashboard = () => {
       return;
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/admin/contacts/${contactId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.ok) {
-        alert("Mensagem eliminada com sucesso!");
-        fetchContacts();
-      }
+      await apiFetch(`/admin/contacts/${contactId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Mensagem eliminada com sucesso!");
+      fetchContacts();
     } catch (err) {
       alert("Erro ao eliminar mensagem");
     }
@@ -317,7 +365,7 @@ const AdminDashboard = () => {
 
     setSavingOrderId(orderId);
     try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+      const updatedOrder = await apiFetch(`/admin/orders/${orderId}`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -331,13 +379,6 @@ const AdminDashboard = () => {
           mark_read: true,
         }),
       });
-
-      if (!response.ok) {
-        alert("Não foi possível guardar as alterações da encomenda.");
-        return;
-      }
-
-      const updatedOrder = await response.json().catch(() => null);
       setOrders((prev) =>
         prev.map((order) =>
           getRecordId(order) === orderId
@@ -365,18 +406,10 @@ const AdminDashboard = () => {
 
   const handleArchiveOrder = async (orderId) => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/admin/orders/${orderId}/archive`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (!response.ok) {
-        alert("Não foi possível arquivar a encomenda.");
-        return;
-      }
+      await apiFetch(`/admin/orders/${orderId}/archive`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setOrders((prev) =>
         prev.filter((order) => getRecordId(order) !== orderId),
@@ -391,107 +424,16 @@ const AdminDashboard = () => {
       return;
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+      await apiFetch(`/admin/orders/${orderId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.ok) {
-        alert("Não foi possível apagar a encomenda.");
-        return;
-      }
 
       setOrders((prev) =>
         prev.filter((order) => getRecordId(order) !== orderId),
       );
     } catch (err) {
       alert("Erro ao apagar encomenda");
-    }
-  };
-
-  const handleOrderStatusChange = async (orderId, nextStatus) => {
-    try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: nextStatus })
-      });
-
-      if (!response.ok) {
-        alert('Não foi possível atualizar o estado da encomenda.');
-        return;
-      }
-
-      setOrders((prev) => prev.map((order) => (
-        (order.id === orderId || order._id === orderId) ? { ...order, status: nextStatus } : order
-      )));
-    } catch (err) {
-      alert('Erro ao atualizar encomenda');
-    }
-  };
-
-  const handleOrderTrackingChange = async (orderId, trackingNumber) => {
-    try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/tracking`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ tracking_number: trackingNumber })
-      });
-
-      if (!response.ok) {
-        alert('Não foi possível atualizar o tracking da encomenda.');
-        return;
-      }
-
-      setOrders((prev) => prev.map((order) => (
-        (order.id === orderId || order._id === orderId) ? { ...order, tracking_number: trackingNumber } : order
-      )));
-    } catch (err) {
-      alert('Erro ao atualizar tracking');
-    }
-  };
-
-  const handleArchiveOrder = async (orderId) => {
-    try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}/archive`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        alert('Não foi possível arquivar a encomenda.');
-        return;
-      }
-
-      setOrders((prev) => prev.filter((order) => order.id !== orderId && order._id !== orderId));
-    } catch (err) {
-      alert('Erro ao arquivar encomenda');
-    }
-  };
-
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Tem a certeza que quer apagar esta encomenda?')) return;
-
-    try {
-      const response = await fetch(`${API_URL}/api/admin/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        alert('Não foi possível apagar a encomenda.');
-        return;
-      }
-
-      setOrders((prev) => prev.filter((order) => order.id !== orderId && order._id !== orderId));
-    } catch (err) {
-      alert('Erro ao apagar encomenda');
     }
   };
 
@@ -620,7 +562,6 @@ const AdminDashboard = () => {
                           setEditingProduct(null);
                         }}
                         token={token}
-                        apiUrl={API_URL}
                       />
                     ) : (
                       <div className="grid gap-4">
@@ -996,7 +937,7 @@ const AdminDashboard = () => {
 };
 
 // Product Form Component
-const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
+const ProductForm = ({ product, onSave, onCancel, token }) => {
   const [formData, setFormData] = useState(
     product || {
       title_pt: "",
@@ -1021,13 +962,10 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
     setSaving(true);
 
     try {
-      const url = product
-        ? `${apiUrl}/api/admin/products/${product.id}`
-        : `${apiUrl}/api/products`;
-
+      const path = product ? `/admin/products/${product.id}` : "/products";
       const method = product ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      await apiFetch(path, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1036,12 +974,8 @@ const ProductForm = ({ product, onSave, onCancel, token, apiUrl }) => {
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        alert(product ? "Produto atualizado!" : "Produto criado!");
-        onSave();
-      } else {
-        alert("Erro ao guardar produto");
-      }
+      alert(product ? "Produto atualizado!" : "Produto criado!");
+      onSave();
     } catch (err) {
       alert("Erro ao guardar produto");
     } finally {

@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 
 const CONTACT_EMAIL = "hello@weloveloveletters.com";
 
-const CONTACT_EMAIL = 'hello@weloveloveletters.com';
-
 const ShippingReturns = () => {
   const { t } = useLanguage();
 

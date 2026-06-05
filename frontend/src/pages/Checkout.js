@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { createCheckoutSession, logApiError } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { motion } from "framer-motion";
@@ -93,7 +93,7 @@ const Checkout = () => {
       }));
 
       const originUrl = window.location.origin;
-      const checkoutResponse = await axios.post(`${API}/checkout/session`, {
+      const checkoutData = await createCheckoutSession({
         items: checkoutItems,
         customer_email: formData.email,
         customer_name: formData.name,
@@ -111,8 +111,18 @@ const Checkout = () => {
         cancel_url: `${originUrl}/checkout`,
       });
 
-      const redirectUrl =
-        checkoutResponse.data?.url || checkoutResponse.data?.checkout_url;
+      if (checkoutData?.email_error || checkoutData?.email_sent === false) {
+        logApiError({
+          method: "POST",
+          url: `${API}/checkout/session`,
+          data: checkoutData,
+          error: new Error(
+            "Checkout created, but backend reported an email delivery problem",
+          ),
+        });
+      }
+
+      const redirectUrl = checkoutData?.url || checkoutData?.checkout_url;
       if (redirectUrl) {
         window.location.href = redirectUrl;
         return;

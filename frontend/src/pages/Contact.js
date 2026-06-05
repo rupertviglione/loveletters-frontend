@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { submitContact, logApiError } from "@/services/api";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,9 +32,29 @@ const Contact = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API}/contact`, formData);
+      const contactResponse = await submitContact(formData);
 
-      toast.success(t("Mensagem enviada!", "Message sent!"));
+      if (
+        contactResponse?.email_error ||
+        contactResponse?.email_sent === false
+      ) {
+        logApiError({
+          method: "POST",
+          url: `${API}/contact`,
+          data: contactResponse,
+          error: new Error(
+            "Contact message saved, but backend reported an email delivery problem",
+          ),
+        });
+        toast.success(
+          t(
+            "Mensagem guardada. Não conseguimos confirmar o envio do email, mas vamos ver no BackOffice.",
+            "Message saved. We could not confirm email delivery, but we will see it in the BackOffice.",
+          ),
+        );
+      } else {
+        toast.success(t("Mensagem enviada!", "Message sent!"));
+      }
 
       setFormData({ name: "", email: "", message: "" });
     } catch (error) {
