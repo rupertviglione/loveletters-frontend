@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { apiFetch } from "@/services/api";
+import { adminLogin } from "@/services/api";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
@@ -17,13 +17,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const data = await apiFetch("/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const data = await adminLogin(username, password);
 
       localStorage.setItem("admin_token", data.access_token);
       navigate("/admin/dashboard");

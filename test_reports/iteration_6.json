@@ -1,0 +1,47 @@
+{
+  "summary": "Frontend regression + refactor validation after AdminDashboard split, single apiFetch stack, react-hot-toast + ConfirmDialog rollout, save-button loader spinner, and mobile responsive orders panel. ALL test scenarios from the review request pass. Previous iteration_5 bugs (401 redirect dropping ?expired=1, and 'clone on Response' console error) are CONFIRMED FIXED.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/checkout/status/{session_id}", "issue": "Previous iteration reported a 500 for the archived session; current run shows the endpoint resolves and the Success page no longer needs the /orders/by-session fallback. Fallback code path therefore not exercised on the live order LL-20260605-4B5493, but the rendered output is correct (order number, items 'O poema e tu', total €36.00, cart cleared)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminDashboard refactor is clean: orchestrator ~150 lines, tabs split into ProductsTab/OrdersTab/ContactsTab, with shared constants.js — good DRY and maintainability gain.",
+    "api.js: single apiFetch is the only HTTP stack now (axios removed). 401 handler centralized via handleAdminUnauthorized + hard window.location.replace, AND AdminDashboard.verifyAuth now lets the global handler do the redirect — that's why the expired=1 banner finally shows. Good fix.",
+    "ConfirmDialog component is well-isolated with confirm-dialog / confirm-cancel / confirm-ok data-testids and click-outside-to-cancel via overlay. Used consistently for delete-product/order/contact actions.",
+    "ReplyModal uses field names reply-subject / reply-message / reply-attachments and submits multipart via apiFetch without manually setting Content-Type — browser sets the boundary correctly (verified by behavior; field name 'attachment' on FormData).",
+    "OrdersTab save button: spinner correctly toggles via savingId state, swaps Save icon for Loader with animate-spin and 'A guardar...' text — verified in-flight during real PATCH call."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only test against live Render API)", "frontend": "100% (13/13 scenarios pass)"},
+  "test_credentials": "Admin: tmargaridarodrigues / weloveloveletters2026!admin (live Render). /app/memory/test_credentials.md still references old local admin/admin123 — main agent should sync it.",
+  "seed_data_creation": "Created 1 TEST contact via /api/contact (TEST AutoQA-Iter6 / qa-iter6@example.com) to exercise the reply modal and ConfirmDialog confirm-ok delete flow. CLEANED UP — deleted via the ConfirmDialog -> adminDeleteContact path at end of test (Mensagens list confirmed empty after).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Refactor is solid; all previous bugs fixed. Archived order LL-20260605-4B5493 is still intact (Apagar dialog was opened then CANCELLED). Loader spinner test did click 'Guardar alterações' once on the archived order with its existing values — backend likely sent a notify_customer email as part of that save (expected per the original instructions; values were not modified). Reply modal field test ids: reply-subject, reply-message, reply-attachments, reply-submit. ConfirmDialog test ids: confirm-dialog, confirm-cancel, confirm-ok.",
+  "scenarios_tested": [
+    {"id": "admin-login", "status": "PASS"},
+    {"id": "expired-session-banner (BADTOKEN -> /admin/login?expired=1)", "status": "PASS — previously failing in iter5, now fixed"},
+    {"id": "orders-tab Activas/Arquivadas toggle + LL-20260605-4B5493 + 'O poema e tu' (not 'Produto') + order-unarchive-<id>", "status": "PASS"},
+    {"id": "contacts-tab Activas/Arquivadas toggle", "status": "PASS"},
+    {"id": "contacts auto-poll ~25s (verified extra GET /api/admin/contacts after 28s wait)", "status": "PASS"},
+    {"id": "reply modal fields (subject/message/attachments)", "status": "PASS"},
+    {"id": "success?session_id=valid -> renders order#, items, total €36.00, shipping; ll-cart cleared", "status": "PASS"},
+    {"id": "success?session_id=INVALID -> success-timeout + success-retry-button after ~30s", "status": "PASS"},
+    {"id": "public /contact -> new toast 'Recebemos a tua mensagem!'", "status": "PASS"},
+    {"id": "ConfirmDialog replaces window.confirm for delete order (CANCEL only — archived order intact)", "status": "PASS"},
+    {"id": "ConfirmDialog confirm-ok deletes test contact (verified cleanup)", "status": "PASS"},
+    {"id": "Loader spinner shown while saving order ('A guardar...' + svg.animate-spin)", "status": "PASS"},
+    {"id": "Mobile (375x800) orders row stacks flex-col + sm:flex-row", "status": "PASS"},
+    {"id": "No 'clone on Response' console error on any admin flow", "status": "PASS — 0 occurrences"},
+    {"id": "Product form opens + CANCELAR (no creation)", "status": "PASS"}
+  ]
+}

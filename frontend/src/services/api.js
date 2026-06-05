@@ -1,4 +1,9 @@
-import axios from "axios";
+// Single fetch-based HTTP layer for the Love Letters frontend.
+//
+// All public + admin calls go through `apiFetch`. We do not use axios anymore —
+// keeping a single network stack means a single 401 handler, a single error log
+// pipeline, and predictable behaviour for multipart uploads (browser-managed
+// boundary).
 
 export const API_BASE_URL = process.env.REACT_APP_BACKEND_URL
   ? `${process.env.REACT_APP_BACKEND_URL}/api`
@@ -95,6 +100,10 @@ export class ApiRequestError extends Error {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 401 handling (token expiry on admin routes)
+// ---------------------------------------------------------------------------
+
 const isAdminPath = (url = "") => {
   try {
     const path = url.replace(API_BASE_URL, "");
@@ -116,24 +125,62 @@ const handleAdminUnauthorized = (url) => {
   window.location.replace("/admin/login?expired=1");
 };
 
+// ---------------------------------------------------------------------------
+// Core fetch wrapper
+// ---------------------------------------------------------------------------
+
+const buildQueryString = (params) => {
+  if (!params) return "";
+  const entries = Object.entries(params).filter(
+    ([, v]) => v !== undefined && v !== null && v !== "",
+  );
+  if (entries.length === 0) return "";
+  const usp = new URLSearchParams();
+  entries.forEach(([k, v]) => usp.append(k, String(v)));
+  return `?${usp.toString()}`;
+};
+
+/**
+ * apiFetch — the single entrypoint for all HTTP traffic.
+ *
+ * @param {string} path                   relative path (e.g. "/admin/orders") or full URL
+ * @param {object} options
+ * @param {string} [options.method]
+ * @param {object} [options.headers]
+ * @param {object|string|FormData} [options.body]   body OR options.json for auto JSON
+ * @param {object} [options.json]         object → serialized as JSON
+ * @param {object} [options.params]       URL query parameters
+ */
 export const apiFetch = async (path, options = {}) => {
-  const method = options.method || "GET";
-  const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+  const method = (options.method || "GET").toUpperCase();
+  const query = buildQueryString(options.params);
+  const url = path.startsWith("http")
+    ? `${path}${query}`
+    : `${API_BASE_URL}${path}${query}`;
   const startedAt = Date.now();
+
+  // Build init: special-case `json` for convenience.
+  const headers = { ...(options.headers || {}) };
+  let body = options.body;
+  if (options.json !== undefined) {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    body = JSON.stringify(options.json);
+  }
 
   logApiRequest({
     method,
     url,
-    data: options.body,
-    headers: options.headers,
+    data: options.json ?? options.body,
+    headers,
   });
 
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, { ...options, method, headers, body });
     const durationMs = Date.now() - startedAt;
 
-    // Read body once; don't rely on response.clone() (some fetch instrumentation
-    // can consume the body, making clone() throw).
+    // Read body only once; do NOT use response.clone() (some fetch
+    // instrumentation in preview environments consumes the body and makes
+    // clone() throw).
     let data = null;
     try {
       data = await safeParseJson(response);
@@ -144,11 +191,7 @@ export const apiFetch = async (path, options = {}) => {
     if (!response.ok) {
       const error = new ApiRequestError(
         `API request failed with status ${response.status}`,
-        {
-          status: response.status,
-          data,
-          response,
-        },
+        { status: response.status, data, response },
       );
       logApiError({
         method,
@@ -165,10 +208,7 @@ export const apiFetch = async (path, options = {}) => {
     logApiResponse({ method, url, status: response.status, data, durationMs });
     return data;
   } catch (error) {
-    if (error instanceof ApiRequestError) {
-      throw error;
-    }
-
+    if (error instanceof ApiRequestError) throw error;
     logApiError({
       method,
       url,
@@ -181,121 +221,123 @@ export const apiFetch = async (path, options = {}) => {
   }
 };
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 15000,
-  headers: { "Content-Type": "application/json" },
-});
+// ---------------------------------------------------------------------------
+// Public endpoints
+// ---------------------------------------------------------------------------
 
-api.interceptors.request.use((config) => {
-  config.metadata = { startedAt: Date.now() };
-  logApiRequest({
-    method: config.method,
-    url: `${config.baseURL || ""}${config.url || ""}`,
-    data: config.data || config.params,
-    headers: config.headers,
-  });
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => {
-    logApiResponse({
-      method: response.config.method,
-      url: `${response.config.baseURL || ""}${response.config.url || ""}`,
-      status: response.status,
-      data: response.data,
-      durationMs:
-        Date.now() - (response.config.metadata?.startedAt || Date.now()),
-    });
-    return response;
-  },
-  (error) => {
-    const url = `${error.config?.baseURL || ""}${error.config?.url || ""}`;
-    logApiError({
-      method: error.config?.method,
-      url,
-      status: error.response?.status,
-      data: error.response?.data,
-      error,
-      durationMs:
-        Date.now() - (error.config?.metadata?.startedAt || Date.now()),
-    });
-    if (error.response?.status === 401) handleAdminUnauthorized(url);
-    return Promise.reject(error);
-  },
-);
-
-// Products
 export const getProducts = (category) =>
-  api
-    .get("/products", {
-      params: category && category !== "all" ? { category } : {},
-    })
-    .then((r) => r.data);
+  apiFetch("/products", {
+    params: category && category !== "all" ? { category } : undefined,
+  });
 
-export const getProduct = (id) =>
-  api.get(`/products/${id}`).then((r) => r.data);
+export const getProduct = (id) => apiFetch(`/products/${id}`);
 
-// Checkout
 export const createCheckoutSession = (data) =>
-  api.post("/checkout/session", data).then((r) => r.data);
+  apiFetch("/checkout/session", { method: "POST", json: data });
 
 export const getCheckoutStatus = (sessionId) =>
-  api.get(`/checkout/status/${sessionId}`).then((r) => r.data);
+  apiFetch(`/checkout/status/${sessionId}`);
 
 export const getOrderBySession = (sessionId) =>
-  api.get(`/orders/by-session/${sessionId}`).then((r) => r.data);
+  apiFetch(`/orders/by-session/${sessionId}`);
 
-// Contact
 export const submitContact = (data) =>
-  api.post("/contact", data).then((r) => r.data);
+  apiFetch("/contact", { method: "POST", json: data });
 
-// ---- Admin helpers ----
-const adminHeaders = (token, extra = {}) => ({
+// ---------------------------------------------------------------------------
+// Admin helpers
+// ---------------------------------------------------------------------------
+
+const auth = (token, extra = {}) => ({
   Authorization: `Bearer ${token}`,
   ...extra,
 });
 
+// Auth
+export const adminVerify = (token) =>
+  apiFetch("/admin/verify", { headers: auth(token) });
+
+// Products
+export const adminCreateProduct = (token, payload) =>
+  apiFetch("/products", { method: "POST", headers: auth(token), json: payload });
+
+export const adminUpdateProduct = (token, productId, payload) =>
+  apiFetch(`/admin/products/${productId}`, {
+    method: "PUT",
+    headers: auth(token),
+    json: payload,
+  });
+
+export const adminDeleteProduct = (token, productId) =>
+  apiFetch(`/admin/products/${productId}`, {
+    method: "DELETE",
+    headers: auth(token),
+  });
+
 // Orders
 export const adminGetOrders = (token) =>
-  apiFetch("/admin/orders", { headers: adminHeaders(token) });
+  apiFetch("/admin/orders", { headers: auth(token) });
 
 export const adminGetArchivedOrders = (token) =>
-  apiFetch("/admin/orders/archived", { headers: adminHeaders(token) });
+  apiFetch("/admin/orders/archived", { headers: auth(token) });
+
+export const adminPatchOrder = (token, orderId, payload) =>
+  apiFetch(`/admin/orders/${orderId}`, {
+    method: "PATCH",
+    headers: auth(token),
+    json: payload,
+  });
 
 export const adminArchiveOrder = (token, id) =>
   apiFetch(`/admin/orders/${id}/archive`, {
     method: "POST",
-    headers: adminHeaders(token),
+    headers: auth(token),
   });
 
 export const adminUnarchiveOrder = (token, id) =>
   apiFetch(`/admin/orders/${id}/unarchive`, {
     method: "POST",
-    headers: adminHeaders(token),
+    headers: auth(token),
+  });
+
+export const adminDeleteOrder = (token, id) =>
+  apiFetch(`/admin/orders/${id}`, { method: "DELETE", headers: auth(token) });
+
+export const adminMarkOrderRead = (token, id) =>
+  apiFetch(`/admin/orders/${id}/mark-read`, {
+    method: "POST",
+    headers: auth(token),
   });
 
 // Contacts
 export const adminGetContacts = (token) =>
-  apiFetch("/admin/contacts", { headers: adminHeaders(token) });
+  apiFetch("/admin/contacts", { headers: auth(token) });
 
 export const adminGetArchivedContacts = (token) =>
-  apiFetch("/admin/contacts/archived", { headers: adminHeaders(token) });
+  apiFetch("/admin/contacts/archived", { headers: auth(token) });
 
 export const adminArchiveContact = (token, id) =>
   apiFetch(`/admin/contacts/${id}/archive`, {
     method: "POST",
-    headers: adminHeaders(token),
+    headers: auth(token),
   });
 
 export const adminUnarchiveContact = (token, id) =>
   apiFetch(`/admin/contacts/${id}/unarchive`, {
     method: "POST",
-    headers: adminHeaders(token),
+    headers: auth(token),
   });
 
-// Reply to a contact (multipart with optional attachments)
+export const adminDeleteContact = (token, id) =>
+  apiFetch(`/admin/contacts/${id}`, { method: "DELETE", headers: auth(token) });
+
+export const adminMarkContactRead = (token, id) =>
+  apiFetch(`/admin/contacts/${id}/mark-read`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+// Reply (multipart — DO NOT set Content-Type; the browser sets the boundary).
 export const adminReplyContact = async (
   token,
   contactId,
@@ -307,13 +349,20 @@ export const adminReplyContact = async (
   (attachments || []).forEach((file) => {
     if (file) formData.append("attachment", file, file.name);
   });
-
-  // IMPORTANT: do NOT set Content-Type, let the browser set the multipart boundary.
   return apiFetch(`/admin/contacts/${contactId}/reply`, {
     method: "POST",
-    headers: adminHeaders(token),
+    headers: auth(token),
     body: formData,
   });
 };
 
-export default api;
+// Notifications
+export const adminGetNotifications = (token) =>
+  apiFetch("/admin/notifications", { headers: auth(token) });
+
+// Login (no token yet)
+export const adminLogin = (username, password) =>
+  apiFetch("/admin/login", {
+    method: "POST",
+    json: { username, password },
+  });
