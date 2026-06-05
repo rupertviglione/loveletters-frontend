@@ -95,10 +95,20 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
-      localStorage.removeItem("admin_token");
-      navigate("/admin/login");
+      // 401 already triggers global redirect (with ?expired=1) via api.js.
+      // For non-auth errors (e.g. transient network), do NOT log the user out.
+      if (err?.status === 401) {
+        localStorage.removeItem("admin_token");
+        // global handler may already be redirecting; this is a safety net
+        if (
+          typeof window !== "undefined" &&
+          !window.location.pathname.startsWith("/admin/login")
+        ) {
+          window.location.replace("/admin/login?expired=1");
+        }
+      }
     }
-  }, [token, navigate]);
+  }, [token]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);

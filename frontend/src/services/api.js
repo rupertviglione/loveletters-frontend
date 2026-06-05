@@ -130,8 +130,16 @@ export const apiFetch = async (path, options = {}) => {
 
   try {
     const response = await fetch(url, options);
-    const data = await safeParseJson(response.clone()).catch(() => null);
     const durationMs = Date.now() - startedAt;
+
+    // Read body once; don't rely on response.clone() (some fetch instrumentation
+    // can consume the body, making clone() throw).
+    let data = null;
+    try {
+      data = await safeParseJson(response);
+    } catch {
+      data = null;
+    }
 
     if (!response.ok) {
       const error = new ApiRequestError(
