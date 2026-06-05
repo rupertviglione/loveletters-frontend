@@ -95,6 +95,27 @@ export class ApiRequestError extends Error {
   }
 }
 
+const isAdminPath = (url = "") => {
+  try {
+    const path = url.replace(API_BASE_URL, "");
+    return path.startsWith("/admin/") && !path.startsWith("/admin/login");
+  } catch {
+    return false;
+  }
+};
+
+const handleAdminUnauthorized = (url) => {
+  if (typeof window === "undefined") return;
+  if (!isAdminPath(url)) return;
+  if (window.location.pathname.startsWith("/admin/login")) return;
+  try {
+    localStorage.removeItem("admin_token");
+  } catch {
+    /* ignore */
+  }
+  window.location.replace("/admin/login?expired=1");
+};
+
 export const apiFetch = async (path, options = {}) => {
   const method = options.method || "GET";
   const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
@@ -129,6 +150,7 @@ export const apiFetch = async (path, options = {}) => {
         error,
         durationMs,
       });
+      if (response.status === 401) handleAdminUnauthorized(url);
       throw error;
     }
 
@@ -181,15 +203,17 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    const url = `${error.config?.baseURL || ""}${error.config?.url || ""}`;
     logApiError({
       method: error.config?.method,
-      url: `${error.config?.baseURL || ""}${error.config?.url || ""}`,
+      url,
       status: error.response?.status,
       data: error.response?.data,
       error,
       durationMs:
         Date.now() - (error.config?.metadata?.startedAt || Date.now()),
     });
+    if (error.response?.status === 401) handleAdminUnauthorized(url);
     return Promise.reject(error);
   },
 );
@@ -212,8 +236,76 @@ export const createCheckoutSession = (data) =>
 export const getCheckoutStatus = (sessionId) =>
   api.get(`/checkout/status/${sessionId}`).then((r) => r.data);
 
+export const getOrderBySession = (sessionId) =>
+  api.get(`/orders/by-session/${sessionId}`).then((r) => r.data);
+
 // Contact
 export const submitContact = (data) =>
   api.post("/contact", data).then((r) => r.data);
+
+// ---- Admin helpers ----
+const adminHeaders = (token, extra = {}) => ({
+  Authorization: `Bearer ${token}`,
+  ...extra,
+});
+
+// Orders
+export const adminGetOrders = (token) =>
+  apiFetch("/admin/orders", { headers: adminHeaders(token) });
+
+export const adminGetArchivedOrders = (token) =>
+  apiFetch("/admin/orders/archived", { headers: adminHeaders(token) });
+
+export const adminArchiveOrder = (token, id) =>
+  apiFetch(`/admin/orders/${id}/archive`, {
+    method: "POST",
+    headers: adminHeaders(token),
+  });
+
+export const adminUnarchiveOrder = (token, id) =>
+  apiFetch(`/admin/orders/${id}/unarchive`, {
+    method: "POST",
+    headers: adminHeaders(token),
+  });
+
+// Contacts
+export const adminGetContacts = (token) =>
+  apiFetch("/admin/contacts", { headers: adminHeaders(token) });
+
+export const adminGetArchivedContacts = (token) =>
+  apiFetch("/admin/contacts/archived", { headers: adminHeaders(token) });
+
+export const adminArchiveContact = (token, id) =>
+  apiFetch(`/admin/contacts/${id}/archive`, {
+    method: "POST",
+    headers: adminHeaders(token),
+  });
+
+export const adminUnarchiveContact = (token, id) =>
+  apiFetch(`/admin/contacts/${id}/unarchive`, {
+    method: "POST",
+    headers: adminHeaders(token),
+  });
+
+// Reply to a contact (multipart with optional attachments)
+export const adminReplyContact = async (
+  token,
+  contactId,
+  { subject, message, attachments = [] } = {},
+) => {
+  const formData = new FormData();
+  if (subject) formData.append("subject", subject);
+  formData.append("message", message);
+  (attachments || []).forEach((file) => {
+    if (file) formData.append("attachment", file, file.name);
+  });
+
+  // IMPORTANT: do NOT set Content-Type, let the browser set the multipart boundary.
+  return apiFetch(`/admin/contacts/${contactId}/reply`, {
+    method: "POST",
+    headers: adminHeaders(token),
+    body: formData,
+  });
+};
 
 export default api;

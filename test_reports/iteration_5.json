@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend-only E2E review of Love Letters site against live Render backend. All major flows pass: admin login + expired banner, orders Activas/Arquivadas tabs (archived list shows LL-20260605-4B5493 with order-unarchive-<id> button), contacts Activas/Arquivadas tabs with confirmed ~25s auto-polling, reply modal opens with subject/message/attachments and submits as multipart/form-data (browser-set boundary, no manual Content-Type), public contact form submits 200 to /api/contact and shows new toast wording, Success page polling correctly falls back from a 500 on /checkout/status to /orders/by-session for the archived session and renders order LL-20260605-4B5493 / €36.00 / items / shipping + clears localStorage ll-cart, invalid session reaches success-timeout state with success-retry-button after ~30s.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/admin/contacts/{id}/reply", "issue": "Endpoint hangs / never responds (frontend ApiRequestError network_or_cors_error after 10s; curl with --max-time 90 also times out). Confirmed via UI and direct curl with valid Bearer token. Multipart payload is correctly formed by the frontend (Content-Type: multipart/form-data with boundary, field name 'attachment').", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminDashboard.verifyAuth", "issue": "On 401, admin is redirected to /admin/login WITHOUT ?expired=1 because verifyAuth's catch calls navigate('/admin/login') directly, racing/overriding the global handleAdminUnauthorized that does location.replace('/admin/login?expired=1'). Repro: localStorage.setItem('admin_token','badtoken') then visit /admin/dashboard -> lands on /admin/login (no banner). Fix: remove the explicit navigate from verifyAuth and rely on the global 401 handler, OR change verifyAuth to navigate('/admin/login?expired=1').", "selector": "AdminDashboard.js line 92-101 verifyAuth catch", "priority": "MEDIUM"},
+      {"component": "services/api.js apiFetch", "issue": "Console shows 'TypeError: Failed to execute clone on Response: Response body is already used' on some 401 paths. Harmless but indicates response.clone() is being called after body consumption in an error path (likely the 401->throw path interplay with axios+fetch dual stack). Worth hardening.", "selector": "api.js apiFetch around line 133-155", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Admin reply to contact", "issue": "Frontend wiring is correct (multipart, no manual Content-Type, field name 'attachment'), but request never resolves due to backend timeout. Toast 'Erro ao enviar resposta.' would eventually surface; right now request just hangs from user perspective.", "affected_selectors": ["[data-testid=reply-submit]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix AdminDashboard.verifyAuth so a stale token redirects to /admin/login?expired=1 (so the expired banner shows). Easiest: remove the manual navigate() and let the global handleAdminUnauthorized handle it, or pass expired=1 in the navigate call.",
+    "Investigate backend /api/admin/contacts/{id}/reply on Render (loveletters-backend) — confirmed hanging (>90s) via curl, blocks the reply UX. Likely SMTP send is blocking the request worker; should be moved to background task or have a timeout + fast 200 response.",
+    "Harden api.js to avoid 'clone on already-used Response' error on 401 paths."
+  ],
+  "critical_code_review_comments": [
+    "AdminDashboard.js is 1570+ lines and includes 3 inline components (Dashboard, ReplyModal, ProductForm). Should be split for maintainability.",
+    "AdminDashboard.handleSaveOrderChanges and handleDeleteProduct still use alert()/confirm() while the rest of the dashboard uses react-hot-toast; inconsistent UX.",
+    "Two parallel HTTP stacks (raw fetch via apiFetch + axios via `api`) duplicate 401 handling and error logging. Consolidating to one (axios) would simplify.",
+    "verifyAuth catches everything and logs the user out, including transient network errors — could log out users on a flaky network."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only test, external backend)", "frontend": "~90% (8/9 flows pass; reply blocked by backend timeout; 401-with-expired-banner has redirect-without-query bug)"},
+  "test_credentials": "Admin: tmargaridarodrigues / weloveloveletters2026!admin (live Render). /app/memory/test_credentials.md is OUTDATED (still lists admin/admin123 for a local backend).",
+  "seed_data_creation": "Created 1 TEST contact via /api/contact (name 'TEST AutoQA', email qa-test@example.com) since active contacts list was empty. The contact remains on the backend; main agent may want to archive/delete it.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend is external (Render). On retest: archived order LL-20260605-4B5493 still exists; do NOT click its Desarquivar button (instructions). The reply backend endpoint was timing out at time of test - re-verify after backend fix before re-testing reply UI. The 401-without-expired-banner repro: open devtools, localStorage.setItem('admin_token','badtoken'), visit /admin/dashboard, expect URL = /admin/login?expired=1.",
+  "rca of the issue": "401 expired-banner bug: AdminDashboard's verifyAuth() has its own catch that calls navigate('/admin/login'). When the global handleAdminUnauthorized fires location.replace('/admin/login?expired=1'), React's navigate (history.push) on the same tick overrides the URL back to '/admin/login' (no query). Removing the explicit navigate from verifyAuth (let the global handler do its job) fixes it. Reply endpoint timeout: backend issue on Render — not in scope of frontend testing."
+}

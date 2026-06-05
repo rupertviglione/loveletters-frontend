@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiFetch } from "@/services/api";
 
 const AdminLogin = () => {
@@ -8,6 +8,8 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const expired = searchParams.get("expired") === "1";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +41,15 @@ const AdminLogin = () => {
         <p className="text-center text-gray-600 mb-8">
           Love Letters Backoffice
         </p>
+
+        {expired && !error && (
+          <div
+            className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm mb-4"
+            data-testid="admin-login-expired"
+          >
+            A sessão expirou. Por favor, inicia sessão de novo.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

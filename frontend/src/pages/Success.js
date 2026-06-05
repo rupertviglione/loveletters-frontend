@@ -1,87 +1,167 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getCheckoutStatus, logApiError } from "@/services/api";
+import {
+  getCheckoutStatus,
+  getOrderBySession,
+  logApiError,
+} from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { CheckCircle, Loader, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle, Loader, AlertCircle, Clock, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const CONTACT_EMAIL = "hello@weloveloveletters.com";
+const MAX_ATTEMPTS = 15; // ~30s of polling at 2s interval
+const POLL_INTERVAL_MS = 2000;
+
+const formatAddress = (address = {}) =>
+  [
+    address.name,
+    address.line1 || address.address_line1,
+    address.line2 || address.address_line2,
+    [address.postal_code, address.city].filter(Boolean).join(" "),
+    address.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
 const Success = () => {
   const { t } = useLanguage();
   const { clearCart } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState("checking");
-  const [orderData, setOrderData] = useState(null);
-  const [emailWarning, setEmailWarning] = useState(false);
   const sessionId = searchParams.get("session_id");
+
+  const [status, setStatus] = useState("checking"); // checking | success | timeout | error
+  const [order, setOrder] = useState(null);
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [emailWarning, setEmailWarning] = useState(false);
+  const [pollKey, setPollKey] = useState(0); // increment to restart polling
+
   const clearedRef = useRef(false);
+  const attemptsRef = useRef(0);
+  const timerRef = useRef(null);
+  const cancelledRef = useRef(false);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!sessionId) {
       navigate("/cart");
-      return;
+      return undefined;
     }
 
-    let attempts = 0;
-    const maxAttempts = 8;
-    let timeoutId;
+    cancelledRef.current = false;
+    attemptsRef.current = 0;
+    setStatus("checking");
+    setEmailWarning(false);
 
-    const checkPaymentStatus = async () => {
+    const tryFallbackOrder = async () => {
       try {
-        const checkoutStatus = await getCheckoutStatus(sessionId);
-
-        if (checkoutStatus?.payment_status === "paid") {
-          if (
-            checkoutStatus?.email_error ||
-            checkoutStatus?.email_sent === false
-          ) {
-            setEmailWarning(true);
-            logApiError({
-              method: "GET",
-              url: `${API}/checkout/status/${sessionId}`,
-              data: checkoutStatus,
-              error: new Error(
-                "Payment confirmed, but backend reported an email delivery problem",
-              ),
-            });
-          }
-          setStatus("success");
-          setOrderData(checkoutStatus);
-          if (!clearedRef.current) {
-            clearCart();
-            clearedRef.current = true;
-          }
-        } else if (checkoutStatus?.status === "expired") {
-          setStatus("error");
-        } else {
-          attempts++;
-          if (attempts < maxAttempts) {
-            timeoutId = setTimeout(checkPaymentStatus, 2000);
-          } else {
-            setStatus("timeout");
-          }
+        const fallback = await getOrderBySession(sessionId);
+        if (fallback && (fallback.status === "paid" || fallback.paid)) {
+          return fallback;
         }
-      } catch (error) {
-        console.error("Error checking payment status:", error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          timeoutId = setTimeout(checkPaymentStatus, 2000);
+      } catch (e) {
+        // ignore fallback errors
+      }
+      return null;
+    };
+
+    const onPaid = (resp, fallbackOrder) => {
+      const finalOrder = resp?.order || fallbackOrder || resp || null;
+      setOrder(finalOrder);
+      setCustomerEmail(
+        resp?.order?.customer?.email ||
+          resp?.order?.customer_email ||
+          fallbackOrder?.customer_email ||
+          fallbackOrder?.customer?.email ||
+          "",
+      );
+      if (resp && resp.confirmation_email_sent_at === null) {
+        setEmailWarning(true);
+      }
+      setStatus("success");
+      if (!clearedRef.current) {
+        clearCart();
+        clearedRef.current = true;
+      }
+    };
+
+    const poll = async () => {
+      if (cancelledRef.current) return;
+      attemptsRef.current += 1;
+
+      let statusResp = null;
+      let statusError = null;
+      try {
+        statusResp = await getCheckoutStatus(sessionId);
+      } catch (err) {
+        statusError = err;
+      }
+
+      if (cancelledRef.current) return;
+
+      const isPaid =
+        statusResp?.paid === true ||
+        statusResp?.payment_status === "paid" ||
+        statusResp?.status === "paid";
+
+      if (isPaid) {
+        onPaid(statusResp, null);
+        return;
+      }
+
+      // If status endpoint blew up (e.g. 500 on archived sessions), try fallback
+      if (statusError || !statusResp) {
+        const fb = await tryFallbackOrder();
+        if (cancelledRef.current) return;
+        if (fb) {
+          onPaid({ order: fb, paid: true }, fb);
+          return;
+        }
+        if (statusError) {
+          logApiError({
+            method: "GET",
+            url: `${API}/checkout/status/${sessionId}`,
+            error: statusError,
+          });
+        }
+      }
+
+      // Not yet paid -> keep polling
+      if (attemptsRef.current < MAX_ATTEMPTS) {
+        timerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+      } else {
+        // Final fallback before giving up
+        const fb = await tryFallbackOrder();
+        if (cancelledRef.current) return;
+        if (fb) {
+          onPaid({ order: fb, paid: true }, fb);
         } else {
-          setStatus("error");
+          setStatus("timeout");
         }
       }
     };
 
-    checkPaymentStatus();
+    poll();
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      cancelledRef.current = true;
+      stopTimer();
     };
-  }, [sessionId, navigate, clearCart]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, pollKey]);
+
+  const retryPolling = () => {
+    setPollKey((k) => k + 1);
+  };
 
   if (status === "checking") {
     return (
@@ -91,7 +171,13 @@ const Success = () => {
       >
         <Loader className="animate-spin text-accent mb-6" size={48} />
         <p className="font-serif text-xl text-muted-foreground italic">
-          {t("A verificar pagamento...", "Checking payment...")}
+          {t("A confirmar pagamento...", "Confirming payment...")}
+        </p>
+        <p className="font-serif text-sm text-muted-foreground/70 mt-2">
+          {t(
+            "Pode demorar alguns segundos.",
+            "This can take a few seconds.",
+          )}
         </p>
       </div>
     );
@@ -105,20 +191,27 @@ const Success = () => {
       >
         <Clock className="text-muted-foreground mb-6" size={48} />
         <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-4">
-          {t("Pagamento pendente", "Payment pending")}
+          {t("Pagamento a processar", "Payment processing")}
         </h1>
         <p className="font-serif text-lg text-muted-foreground mb-8 text-center max-w-2xl">
           {t(
-            "O pagamento esta a ser processado. Recebera um email de confirmacao quando estiver concluido. Se tiver duvidas, contacte-nos.",
-            "Payment is being processed. You will receive a confirmation email when complete. If you have questions, contact us.",
+            "O teu pagamento está a ser processado. Vais receber um email de confirmação assim que estiver concluído.",
+            "Your payment is being processed. You will receive a confirmation email as soon as it is complete.",
           )}
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={retryPolling}
+            className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
+            data-testid="success-retry-button"
+          >
+            {t("Tentar de novo", "Try again")}
+          </button>
           <button
             onClick={() => {
               window.location.href = `mailto:${CONTACT_EMAIL}`;
             }}
-            className="px-8 py-4 bg-accent text-accent-foreground hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-xs font-bold"
+            className="px-8 py-4 border border-border hover:border-accent hover:text-accent transition-all duration-300 uppercase tracking-widest text-xs font-bold"
           >
             {t("Contactar", "Contact us")}
           </button>
@@ -145,8 +238,8 @@ const Success = () => {
         </h1>
         <p className="font-serif text-lg text-muted-foreground mb-8 text-center max-w-2xl">
           {t(
-            "Ocorreu um erro ao verificar o pagamento. Por favor, contacte-nos se o problema persistir.",
-            "An error occurred while verifying payment. Please contact us if the problem persists.",
+            "Ocorreu um erro ao verificar o pagamento. Se já tens débito no Stripe, contacta-nos com este link e nós resolvemos.",
+            "An error occurred while verifying payment. If your card was charged, contact us and we will sort it out.",
           )}
         </p>
         <button
@@ -159,68 +252,135 @@ const Success = () => {
     );
   }
 
+  // status === "success"
+  const items = order?.items || [];
+  const total = Number(
+    order?.total ?? order?.amount_total ?? order?.total_amount ?? 0,
+  );
+  const orderNumber = order?.order_number || order?.id || "";
+  const shippingAddress =
+    order?.shipping_address || order?.customer?.shipping_address || {};
+
   return (
-    <div className="min-h-screen pt-24 md:pt-32" data-testid="success-page">
+    <div className="min-h-screen pt-24 md:pt-32 pb-16" data-testid="success-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="max-w-4xl mx-auto px-4 py-12 md:py-24 text-center"
+        className="max-w-3xl mx-auto px-4 py-12 md:py-16"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="mb-8"
+          className="mb-8 text-center"
         >
           <CheckCircle className="mx-auto text-accent" size={72} />
         </motion.div>
 
-        <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-6">
+        <h1 className="font-syne font-extrabold text-3xl md:text-5xl tracking-tight uppercase mb-4 text-center">
           {t("Obrigado!", "Thank you!")}
         </h1>
 
-        <p className="font-serif text-lg md:text-xl leading-relaxed mb-8 max-w-2xl mx-auto">
-          {emailWarning
-            ? t(
-                "O seu pedido foi confirmado com sucesso. Não conseguimos confirmar o envio do email, mas a encomenda ficou registada. Se precisar, contacte-nos.",
-                "Your order has been confirmed successfully. We could not confirm email delivery, but the order is registered. Contact us if needed.",
-              )
-            : t(
-                "O seu pedido foi confirmado com sucesso. Receberá um email de confirmação em breve.",
-                "Your order has been confirmed successfully. You will receive a confirmation email shortly.",
-              )}
-        </p>
+        {orderNumber && (
+          <p
+            className="text-center font-mono text-sm md:text-base text-muted-foreground mb-6"
+            data-testid="success-order-number"
+          >
+            {t("Encomenda", "Order")}{" "}
+            <span className="font-bold text-foreground">#{orderNumber}</span>
+          </p>
+        )}
 
-        {orderData?.metadata && (
-          <div className="border border-border p-6 md:p-8 mb-8 text-left max-w-md mx-auto">
+        <div className="border border-border p-3 md:p-4 mb-8 mx-auto max-w-xl flex items-start gap-3">
+          <Mail className="text-accent shrink-0 mt-0.5" size={20} />
+          <p className="font-serif text-sm md:text-base leading-relaxed">
+            {emailWarning
+              ? t(
+                  `O teu pedido foi confirmado. Estamos a tentar enviar o email de confirmação${customerEmail ? ` para ${customerEmail}` : ""}, se não chegar contacta-nos.`,
+                  `Your order is confirmed. We are trying to send the confirmation email${customerEmail ? ` to ${customerEmail}` : ""}; if it does not arrive, contact us.`,
+                )
+              : customerEmail
+                ? t(
+                    `Enviámos um email de confirmação para ${customerEmail}.`,
+                    `We sent a confirmation email to ${customerEmail}.`,
+                  )
+                : t(
+                    "Enviámos um email de confirmação.",
+                    "We sent a confirmation email.",
+                  )}
+          </p>
+        </div>
+
+        {items.length > 0 && (
+          <div
+            className="border border-border p-6 md:p-8 mb-6"
+            data-testid="success-order-items"
+          >
             <h2 className="font-courier font-bold text-base uppercase tracking-tight mb-4">
-              {t("Detalhes do pedido", "Order details")}
+              {t("Resumo da encomenda", "Order summary")}
             </h2>
-            <div className="space-y-2 font-mono text-sm">
-              <p>
-                <span className="text-muted-foreground">
-                  {t("Nome:", "Name:")}
-                </span>{" "}
-                <span className="font-bold">
-                  {orderData.metadata.customer_name}
-                </span>
-              </p>
-              <p>
-                <span className="text-muted-foreground">Email:</span>{" "}
-                <span className="font-bold">
-                  {orderData.metadata.customer_email}
-                </span>
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {t("Total:", "Total:")}
-                </span>{" "}
-                <span className="font-bold text-accent">
-                  {(orderData.amount_total / 100).toFixed(2)}€
-                </span>
-              </p>
+            <div className="divide-y divide-border">
+              {items.map((item, idx) => {
+                const title =
+                  item.title_pt ||
+                  item.title ||
+                  item.title_en ||
+                  item.name ||
+                  item.product_title ||
+                  "Produto";
+                const qty = item.quantity || 1;
+                const lineTotal = Number(
+                  item.line_total ?? item.total ?? item.unit_price * qty ?? 0,
+                );
+                return (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-start py-3 font-mono text-sm gap-4"
+                  >
+                    <div>
+                      <p className="font-bold">
+                        {qty}× {title}
+                      </p>
+                      {item.selected_options && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {Object.entries(item.selected_options)
+                            .filter(([, v]) => v)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-bold whitespace-nowrap">
+                      €{lineTotal.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
+
+            <div className="border-t border-border mt-4 pt-4 flex justify-between font-mono text-base">
+              <span className="font-bold uppercase tracking-wide">
+                {t("Total", "Total")}
+              </span>
+              <span
+                className="font-bold text-accent"
+                data-testid="success-order-total"
+              >
+                €{total.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {formatAddress(shippingAddress) && (
+          <div className="border border-border p-6 md:p-8 mb-8">
+            <h2 className="font-courier font-bold text-base uppercase tracking-tight mb-3">
+              {t("Morada de envio", "Shipping address")}
+            </h2>
+            <p className="font-mono text-sm leading-relaxed whitespace-pre-line">
+              {formatAddress(shippingAddress)}
+            </p>
           </div>
         )}
 

@@ -48,12 +48,19 @@ const Contact = () => {
         });
         toast.success(
           t(
-            "Mensagem guardada. Não conseguimos confirmar o envio do email, mas vamos ver no BackOffice.",
-            "Message saved. We could not confirm email delivery, but we will see it in the BackOffice.",
+            "Recebemos a tua mensagem! Não conseguimos confirmar o envio do email de confirmação, mas a mensagem ficou registada. Respondemos o mais rapidamente possível.",
+            "We received your message! We could not confirm the confirmation email, but your message is registered. We will reply as soon as possible.",
           ),
+          { duration: 6000 },
         );
       } else {
-        toast.success(t("Mensagem enviada!", "Message sent!"));
+        toast.success(
+          t(
+            "Recebemos a tua mensagem! Vais receber um email de confirmação em instantes. Respondemos o mais rapidamente possível.",
+            "We received your message! You will receive a confirmation email in a moment. We will reply as soon as possible.",
+          ),
+          { duration: 6000 },
+        );
       }
 
       setFormData({ name: "", email: "", message: "" });

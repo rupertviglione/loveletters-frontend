@@ -1,6 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "@/services/api";
+import {
+  apiFetch,
+  adminGetOrders,
+  adminGetArchivedOrders,
+  adminArchiveOrder,
+  adminUnarchiveOrder,
+  adminGetContacts,
+  adminGetArchivedContacts,
+  adminArchiveContact,
+  adminUnarchiveContact,
+  adminReplyContact,
+} from "@/services/api";
 import {
   LogOut,
   Package,
@@ -10,7 +21,13 @@ import {
   Edit,
   Trash2,
   Save,
+  Archive,
+  ArchiveRestore,
+  Reply,
+  X,
+  Paperclip,
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const COLLECTION_SUBCATEGORIES = [
   { id: "o-poema-e-tu", label: "O poema e tu" },
@@ -53,6 +70,8 @@ const formatAddress = (address = {}) =>
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("products");
+  const [orderView, setOrderView] = useState("active"); // active | archived
+  const [contactView, setContactView] = useState("active"); // active | archived
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -64,6 +83,8 @@ const AdminDashboard = () => {
   const [lastNotifiedUnseen, setLastNotifiedUnseen] = useState(0);
   const [orderDrafts, setOrderDrafts] = useState({});
   const [savingOrderId, setSavingOrderId] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null); // contact object
+  const contactsPollRef = useRef(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("admin_token");
@@ -94,9 +115,10 @@ const AdminDashboard = () => {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/admin/orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const data =
+        orderView === "archived"
+          ? await adminGetArchivedOrders(token)
+          : await adminGetOrders(token);
       const normalizedOrders = Array.isArray(data)
         ? data
         : Array.isArray(data?.orders)
@@ -121,28 +143,34 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, orderView]);
 
-  const fetchContacts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiFetch("/admin/contacts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const normalizedContacts = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.contacts)
-          ? data.contacts
-          : [];
-      setContacts(normalizedContacts);
-      setUnseenContacts(normalizedContacts.filter(isUnread).length);
-    } catch (err) {
-      console.error("Error fetching contacts:", err);
-      setContacts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  const fetchContacts = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const data =
+          contactView === "archived"
+            ? await adminGetArchivedContacts(token)
+            : await adminGetContacts(token);
+        const normalizedContacts = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.contacts)
+            ? data.contacts
+            : [];
+        setContacts(normalizedContacts);
+        if (contactView === "active") {
+          setUnseenContacts(normalizedContacts.filter(isUnread).length);
+        }
+      } catch (err) {
+        console.error("Error fetching contacts:", err);
+        if (!silent) setContacts([]);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [token, contactView],
+  );
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -223,6 +251,28 @@ const AdminDashboard = () => {
     if (activeTab === "orders") fetchOrders();
     if (activeTab === "contacts") fetchContacts();
   }, [activeTab, fetchProducts, fetchOrders, fetchContacts]);
+
+  // Auto-refresh contacts list while messages tab is open (~25s)
+  useEffect(() => {
+    if (contactsPollRef.current) {
+      clearInterval(contactsPollRef.current);
+      contactsPollRef.current = null;
+    }
+    if (activeTab !== "contacts" || !token) return undefined;
+
+    contactsPollRef.current = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchContacts(true);
+      }
+    }, 25000);
+
+    return () => {
+      if (contactsPollRef.current) {
+        clearInterval(contactsPollRef.current);
+        contactsPollRef.current = null;
+      }
+    };
+  }, [activeTab, token, fetchContacts]);
 
   useEffect(() => {
     if (!token) return;
@@ -327,16 +377,26 @@ const AdminDashboard = () => {
 
   const handleArchiveOrder = async (orderId) => {
     try {
-      await apiFetch(`/admin/orders/${orderId}/archive`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await adminArchiveOrder(token, orderId);
       setOrders((prev) =>
         prev.filter((order) => getRecordId(order) !== orderId),
       );
+      toast.success("Encomenda arquivada.");
     } catch (err) {
-      alert("Erro ao arquivar encomenda");
+      toast.error("Erro ao arquivar encomenda");
+    }
+  };
+
+  const handleUnarchiveOrder = async (orderId) => {
+    try {
+      await adminUnarchiveOrder(token, orderId);
+      setOrders((prev) =>
+        prev.filter((order) => getRecordId(order) !== orderId),
+      );
+      toast.success("Encomenda desarquivada.");
+      fetchNotifications();
+    } catch (err) {
+      toast.error("Erro ao desarquivar encomenda");
     }
   };
 
@@ -355,6 +415,32 @@ const AdminDashboard = () => {
       );
     } catch (err) {
       alert("Erro ao apagar encomenda");
+    }
+  };
+
+  const handleArchiveContact = async (contactId) => {
+    try {
+      await adminArchiveContact(token, contactId);
+      setContacts((prev) =>
+        prev.filter((c) => getRecordId(c) !== contactId),
+      );
+      toast.success("Mensagem arquivada.");
+      fetchNotifications();
+    } catch (err) {
+      toast.error("Erro ao arquivar mensagem");
+    }
+  };
+
+  const handleUnarchiveContact = async (contactId) => {
+    try {
+      await adminUnarchiveContact(token, contactId);
+      setContacts((prev) =>
+        prev.filter((c) => getRecordId(c) !== contactId),
+      );
+      toast.success("Mensagem desarquivada.");
+      fetchNotifications();
+    } catch (err) {
+      toast.error("Erro ao desarquivar mensagem");
     }
   };
 
@@ -539,9 +625,40 @@ const AdminDashboard = () => {
                 {/* Orders Tab */}
                 {activeTab === "orders" && (
                   <div>
-                    <h2 className="text-xl font-syne font-bold mb-6">
-                      Encomendas ({orders.length})
-                    </h2>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                      <h2 className="text-xl font-syne font-bold">
+                        Encomendas ({orders.length})
+                      </h2>
+                      <div
+                        className="inline-flex border border-gray-200 rounded-md overflow-hidden"
+                        data-testid="orders-view-switcher"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setOrderView("active")}
+                          className={`px-4 py-1.5 text-xs uppercase tracking-wider font-bold transition-colors ${
+                            orderView === "active"
+                              ? "bg-accent text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                          data-testid="orders-tab-active"
+                        >
+                          Activas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderView("archived")}
+                          className={`px-4 py-1.5 text-xs uppercase tracking-wider font-bold border-l border-gray-200 transition-colors ${
+                            orderView === "archived"
+                              ? "bg-accent text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                          data-testid="orders-tab-archived"
+                        >
+                          Arquivadas
+                        </button>
+                      </div>
+                    </div>
                     <div className="space-y-4">
                       {orders.map((order) => {
                         const orderId = getRecordId(order);
@@ -713,23 +830,40 @@ const AdminDashboard = () => {
                                     !orderId || savingOrderId === orderId
                                   }
                                   className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  data-testid={`order-save-${orderId || ""}`}
                                 >
                                   <Save size={14} />
                                   {savingOrderId === orderId
                                     ? "A guardar..."
                                     : "Guardar alterações"}
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleArchiveOrder(orderId);
-                                  }}
-                                  disabled={!orderId}
-                                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                  Arquivar
-                                </button>
+                                {orderView === "active" ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleArchiveOrder(orderId);
+                                    }}
+                                    disabled={!orderId}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                                    data-testid={`order-archive-${orderId || ""}`}
+                                  >
+                                    <Archive size={14} /> Arquivar
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUnarchiveOrder(orderId);
+                                    }}
+                                    disabled={!orderId}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                                    data-testid={`order-unarchive-${orderId || ""}`}
+                                  >
+                                    <ArchiveRestore size={14} /> Desarquivar
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -753,16 +887,25 @@ const AdminDashboard = () => {
                                     className="text-sm text-gray-600"
                                   >
                                     {item.quantity || 1}x{" "}
-                                    {item.title ||
+                                    {item.title_pt ||
+                                      item.title ||
+                                      item.title_en ||
                                       item.product_title ||
                                       item.name ||
                                       item.product_name ||
-                                      "Produto"}{" "}
+                                      "Produto"}
+                                    {item.selected_options
+                                      ? ` (${Object.entries(item.selected_options)
+                                          .filter(([, v]) => v)
+                                          .map(([k, v]) => `${k}: ${v}`)
+                                          .join(", ")})`
+                                      : ""}{" "}
                                     - €
                                     {Number(
-                                      item.price ||
-                                        item.unit_price ||
+                                      item.line_total ||
                                         item.total ||
+                                        item.price ||
+                                        item.unit_price ||
                                         0,
                                     ).toFixed(2)}
                                   </p>
@@ -778,7 +921,9 @@ const AdminDashboard = () => {
                       })}
                       {orders.length === 0 && (
                         <p className="text-gray-500 italic">
-                          Sem encomendas para mostrar.
+                          {orderView === "archived"
+                            ? "Sem encomendas arquivadas."
+                            : "Sem encomendas para mostrar."}
                         </p>
                       )}
                     </div>
@@ -788,61 +933,170 @@ const AdminDashboard = () => {
                 {/* Contacts Tab */}
                 {activeTab === "contacts" && (
                   <div>
-                    <h2 className="text-xl font-syne font-bold mb-6">
-                      Mensagens ({contacts.length})
-                    </h2>
-                    <div className="space-y-4">
-                      {contacts.map((contact) => (
-                        <div
-                          key={getRecordId(contact)}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${isUnread(contact) ? "border-red-300 bg-red-50/40" : "border-gray-200"}`}
-                          onClick={() => {
-                            const contactId = getRecordId(contact);
-                            if (isUnread(contact) && contactId) {
-                              markContactAsSeen(contactId);
-                            }
-                          }}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                      <h2 className="text-xl font-syne font-bold">
+                        Mensagens ({contacts.length})
+                      </h2>
+                      <div
+                        className="inline-flex border border-gray-200 rounded-md overflow-hidden"
+                        data-testid="contacts-view-switcher"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setContactView("active")}
+                          className={`px-4 py-1.5 text-xs uppercase tracking-wider font-bold transition-colors ${
+                            contactView === "active"
+                              ? "bg-accent text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                          data-testid="contacts-tab-active"
                         >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-bold flex items-center gap-2">
-                                {contact.name}
-                                {isUnread(contact) && (
-                                  <span className="text-[10px] uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">
-                                    novo
-                                  </span>
+                          Activas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContactView("archived")}
+                          className={`px-4 py-1.5 text-xs uppercase tracking-wider font-bold border-l border-gray-200 transition-colors ${
+                            contactView === "archived"
+                              ? "bg-accent text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                          data-testid="contacts-tab-archived"
+                        >
+                          Arquivadas
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {contacts.map((contact) => {
+                        const contactId = getRecordId(contact);
+                        const replies = Array.isArray(contact.replies)
+                          ? contact.replies
+                          : [];
+                        return (
+                          <div
+                            key={contactId}
+                            className={`p-4 border rounded-lg cursor-pointer transition-colors ${isUnread(contact) ? "border-red-300 bg-red-50/40" : "border-gray-200"}`}
+                            onClick={() => {
+                              if (isUnread(contact) && contactId) {
+                                markContactAsSeen(contactId);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="flex-1">
+                                <h3 className="font-bold flex items-center gap-2">
+                                  {contact.name}
+                                  {isUnread(contact) && (
+                                    <span className="text-[10px] uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">
+                                      novo
+                                    </span>
+                                  )}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {contact.email}
+                                </p>
+                                <p className="mt-3 text-gray-700 whitespace-pre-line">
+                                  {contact.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {contact.created_at
+                                    ? new Date(
+                                        contact.created_at,
+                                      ).toLocaleString("pt-PT")
+                                    : "Sem data"}
+                                </p>
+
+                                {replies.length > 0 && (
+                                  <div className="mt-3 border-t border-gray-200 pt-3 space-y-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                      Respostas enviadas ({replies.length})
+                                    </p>
+                                    {replies.map((reply, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="text-xs text-gray-600 bg-gray-50 rounded p-2"
+                                      >
+                                        <p className="font-semibold">
+                                          {reply.subject || "Sem assunto"}
+                                        </p>
+                                        <p className="whitespace-pre-line mt-1">
+                                          {reply.message || reply.body}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 mt-1">
+                                          {reply.sent_at || reply.created_at
+                                            ? new Date(
+                                                reply.sent_at ||
+                                                  reply.created_at,
+                                              ).toLocaleString("pt-PT")
+                                            : ""}
+                                          {Array.isArray(reply.attachments) &&
+                                          reply.attachments.length > 0
+                                            ? ` · ${reply.attachments.length} anexo(s)`
+                                            : ""}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
                                 )}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                {contact.email}
-                              </p>
-                              <p className="mt-3 text-gray-700">
-                                {contact.message}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-2">
-                                {contact.created_at
-                                  ? new Date(contact.created_at).toLocaleString(
-                                      "pt-PT",
-                                    )
-                                  : "Sem data"}
-                              </p>
+                              </div>
+                              <div className="flex flex-col gap-2 ml-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReplyTarget(contact);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-accent text-white rounded hover:bg-red-700 transition-colors"
+                                  title="Responder por email"
+                                  data-testid={`contact-reply-${contactId || ""}`}
+                                >
+                                  <Reply size={14} /> Responder
+                                </button>
+                                {contactView === "active" ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleArchiveContact(contactId);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    title="Arquivar"
+                                    data-testid={`contact-archive-${contactId || ""}`}
+                                  >
+                                    <Archive size={14} /> Arquivar
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUnarchiveContact(contactId);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    title="Desarquivar"
+                                    data-testid={`contact-unarchive-${contactId || ""}`}
+                                  >
+                                    <ArchiveRestore size={14} /> Desarquivar
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteContact(contactId);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50 transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={14} /> Apagar
+                                </button>
+                              </div>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteContact(getRecordId(contact));
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors ml-4"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={20} />
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {contacts.length === 0 && (
                         <p className="text-gray-500 italic">
-                          Sem mensagens para mostrar.
+                          {contactView === "archived"
+                            ? "Sem mensagens arquivadas."
+                            : "Sem mensagens para mostrar."}
                         </p>
                       )}
                     </div>
@@ -852,6 +1106,194 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {replyTarget && (
+        <ReplyModal
+          contact={replyTarget}
+          token={token}
+          onClose={() => setReplyTarget(null)}
+          onSent={() => {
+            setReplyTarget(null);
+            fetchContacts(true);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Reply modal for sending email replies to a contact message
+const ReplyModal = ({ contact, token, onClose, onSent }) => {
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [attachments, setAttachments] = useState([]);
+  const [sending, setSending] = useState(false);
+  const contactId = contact?.id || contact?._id;
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setAttachments((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeAttachment = (idx) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) {
+      toast.error("Escreve uma mensagem antes de enviar.");
+      return;
+    }
+    setSending(true);
+    try {
+      const resp = await adminReplyContact(token, contactId, {
+        subject: subject.trim(),
+        message: message.trim(),
+        attachments,
+      });
+      if (resp?.success === false || resp?.sent === false) {
+        toast.error(
+          "Não foi possível enviar o email." +
+            (resp?.reply_mailto
+              ? " Abre o mailto para enviar manualmente."
+              : ""),
+        );
+      } else {
+        const attachInfo =
+          resp?.attachments_count > 0 ? ` (${resp.attachments_count} anexo(s))` : "";
+        toast.success(`Resposta enviada${attachInfo}.`);
+        onSent?.();
+      }
+    } catch (err) {
+      const detail =
+        err?.data?.detail || err?.data?.message || err?.message || "";
+      toast.error(`Erro ao enviar resposta. ${detail}`.trim());
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+      data-testid="reply-modal"
+    >
+      <div
+        className="bg-white w-full max-w-xl rounded-lg shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div>
+            <h3 className="font-syne font-bold text-lg">
+              Responder a {contact.name}
+            </h3>
+            <p className="text-xs text-gray-500">{contact.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-gray-500 hover:text-gray-900"
+            data-testid="reply-modal-close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+              Assunto
+            </label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Re: A sua mensagem para Love Letters"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              data-testid="reply-subject"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+              Mensagem
+            </label>
+            <textarea
+              required
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={8}
+              placeholder="Escreva a sua resposta..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              data-testid="reply-message"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              Anexos
+            </label>
+            <label className="inline-flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 text-sm">
+              <Paperclip size={16} />
+              Adicionar ficheiros
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                data-testid="reply-attachments"
+              />
+            </label>
+            {attachments.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-gray-700">
+                {attachments.map((file, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-center justify-between bg-gray-50 rounded px-2 py-1"
+                  >
+                    <span className="truncate mr-2">
+                      {file.name}{" "}
+                      <span className="text-gray-400">
+                        ({Math.round(file.size / 1024)} KB)
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={sending}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={sending}
+              className="px-4 py-2 text-sm bg-accent text-white rounded-md hover:bg-red-700 disabled:opacity-50 inline-flex items-center gap-2"
+              data-testid="reply-submit"
+            >
+              <Reply size={16} />
+              {sending ? "A enviar..." : "Enviar resposta"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
