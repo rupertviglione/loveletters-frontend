@@ -9,39 +9,67 @@ import { Loader } from "lucide-react";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const CONTACT_EMAIL = "hello@weloveloveletters.com";
 const SHIPPING_NOTE =
-  "Envio gratuito para Portugal. Envio para países da CEE: 5€. Compras fora da Europa, contactar hello@weloveloveletters.com.";
+  "Envio gratuito para a Europa em compras acima de 50€. Abaixo de 50€: Portugal 8€, resto da Europa 15€. Compras fora da Europa, contactar hello@weloveloveletters.com.";
 const SHIPPING_NOTE_PREFIX =
-  "Envio gratuito para Portugal. Envio para países da CEE: 5€. Compras fora da Europa, contactar ";
+  "Envio gratuito para a Europa em compras acima de 50€. Abaixo de 50€: Portugal 8€, resto da Europa 15€. Compras fora da Europa, contactar ";
+const FREE_SHIPPING_THRESHOLD = 50;
+const PORTUGAL_SHIPPING_COST = 8;
+const EUROPE_SHIPPING_COST = 15;
+const OUTSIDE_EUROPE_CODE = "OUTSIDE_EUROPE";
 
 const SHIPPING_COUNTRIES = [
-  { code: "PT", label: "Portugal", shipping: 0 },
-  { code: "AT", label: "Áustria", shipping: 5 },
-  { code: "BE", label: "Bélgica", shipping: 5 },
-  { code: "BG", label: "Bulgária", shipping: 5 },
-  { code: "HR", label: "Croácia", shipping: 5 },
-  { code: "CY", label: "Chipre", shipping: 5 },
-  { code: "CZ", label: "Chéquia", shipping: 5 },
-  { code: "DK", label: "Dinamarca", shipping: 5 },
-  { code: "EE", label: "Estónia", shipping: 5 },
-  { code: "FI", label: "Finlândia", shipping: 5 },
-  { code: "FR", label: "França", shipping: 5 },
-  { code: "DE", label: "Alemanha", shipping: 5 },
-  { code: "GR", label: "Grécia", shipping: 5 },
-  { code: "HU", label: "Hungria", shipping: 5 },
-  { code: "IE", label: "Irlanda", shipping: 5 },
-  { code: "IT", label: "Itália", shipping: 5 },
-  { code: "LV", label: "Letónia", shipping: 5 },
-  { code: "LT", label: "Lituânia", shipping: 5 },
-  { code: "LU", label: "Luxemburgo", shipping: 5 },
-  { code: "MT", label: "Malta", shipping: 5 },
-  { code: "NL", label: "Países Baixos", shipping: 5 },
-  { code: "PL", label: "Polónia", shipping: 5 },
-  { code: "RO", label: "Roménia", shipping: 5 },
-  { code: "SK", label: "Eslováquia", shipping: 5 },
-  { code: "SI", label: "Eslovénia", shipping: 5 },
-  { code: "ES", label: "Espanha", shipping: 5 },
-  { code: "SE", label: "Suécia", shipping: 5 },
+  { code: "PT", label: "Portugal" },
+  { code: "AD", label: "Andorra" },
+  { code: "AT", label: "Áustria" },
+  { code: "BE", label: "Bélgica" },
+  { code: "BG", label: "Bulgária" },
+  { code: "CH", label: "Suíça" },
+  { code: "CY", label: "Chipre" },
+  { code: "CZ", label: "Chéquia" },
+  { code: "DE", label: "Alemanha" },
+  { code: "DK", label: "Dinamarca" },
+  { code: "EE", label: "Estónia" },
+  { code: "ES", label: "Espanha" },
+  { code: "FI", label: "Finlândia" },
+  { code: "FR", label: "França" },
+  { code: "GB", label: "Reino Unido" },
+  { code: "GR", label: "Grécia" },
+  { code: "HR", label: "Croácia" },
+  { code: "HU", label: "Hungria" },
+  { code: "IE", label: "Irlanda" },
+  { code: "IS", label: "Islândia" },
+  { code: "IT", label: "Itália" },
+  { code: "LI", label: "Liechtenstein" },
+  { code: "LT", label: "Lituânia" },
+  { code: "LU", label: "Luxemburgo" },
+  { code: "LV", label: "Letónia" },
+  { code: "MC", label: "Mónaco" },
+  { code: "MT", label: "Malta" },
+  { code: "NL", label: "Países Baixos" },
+  { code: "NO", label: "Noruega" },
+  { code: "PL", label: "Polónia" },
+  { code: "RO", label: "Roménia" },
+  { code: "SE", label: "Suécia" },
+  { code: "SI", label: "Eslovénia" },
+  { code: "SK", label: "Eslováquia" },
+  { code: "SM", label: "São Marino" },
+  { code: "VA", label: "Vaticano" },
 ];
+
+const getShippingEstimate = (subtotal, countryCode) => {
+  if (countryCode === OUTSIDE_EUROPE_CODE) {
+    return { supported: false, cost: 0 };
+  }
+
+  if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+    return { supported: true, cost: 0 };
+  }
+
+  return {
+    supported: true,
+    cost: countryCode === "PT" ? PORTUGAL_SHIPPING_COST : EUROPE_SHIPPING_COST,
+  };
+};
 
 const Checkout = () => {
   const { t } = useLanguage();
@@ -61,15 +89,27 @@ const Checkout = () => {
     phone: "",
   });
 
+  const subtotal = getTotal();
   const selectedCountry = useMemo(
     () =>
       SHIPPING_COUNTRIES.find(
         (country) => country.code === formData.shipping_country,
-      ) || SHIPPING_COUNTRIES[0],
-    [formData.shipping_country],
+      ) ||
+      (formData.shipping_country === OUTSIDE_EUROPE_CODE
+        ? {
+            code: OUTSIDE_EUROPE_CODE,
+            label: t("Fora da Europa", "Outside Europe"),
+          }
+        : SHIPPING_COUNTRIES[0]),
+    [formData.shipping_country, t],
   );
-  const shippingCost = selectedCountry.shipping;
-  const totalWithShipping = getTotal() + shippingCost;
+  const shippingEstimate = useMemo(
+    () => getShippingEstimate(subtotal, formData.shipping_country),
+    [subtotal, formData.shipping_country],
+  );
+  const shippingCost = shippingEstimate.cost;
+  const totalWithShipping = subtotal + shippingCost;
+  const isCheckoutBlocked = !shippingEstimate.supported;
 
   if (items.length === 0) {
     navigate("/cart");
@@ -82,6 +122,17 @@ const Checkout = () => {
     if (submittingRef.current || loading) return;
     submittingRef.current = true;
     setError("");
+
+    if (isCheckoutBlocked) {
+      setError(
+        t(
+          "Para compras fora da Europa, contacte-nos por email antes de finalizar.",
+          "For purchases outside Europe, please contact us by email before checkout.",
+        ),
+      );
+      submittingRef.current = false;
+      return;
+    }
 
     try {
       setLoading(true);
@@ -204,7 +255,7 @@ const Checkout = () => {
               <p className="text-sm text-muted-foreground mb-4 font-serif">
                 {t(
                   SHIPPING_NOTE_PREFIX,
-                  "Free shipping to Portugal. Shipping to EEC/EU countries: €5. Purchases outside Europe, contact ",
+                  "Free shipping to Europe on purchases over €50. Under €50: Portugal €8, rest of Europe €15. Purchases outside Europe, contact ",
                 )}
                 <a
                   href={`mailto:${CONTACT_EMAIL}`}
@@ -319,7 +370,21 @@ const Checkout = () => {
                           {country.label}
                         </option>
                       ))}
+                      <option value={OUTSIDE_EUROPE_CODE}>
+                        {t(
+                          "Outro país / fora da Europa",
+                          "Other country / outside Europe",
+                        )}
+                      </option>
                     </select>
+                    {isCheckoutBlocked && (
+                      <p className="text-xs text-destructive mt-2 font-serif">
+                        {t(
+                          "Compras fora da Europa: contacte hello@weloveloveletters.com para combinarmos a encomenda.",
+                          "Purchases outside Europe: contact hello@weloveloveletters.com so we can arrange your order.",
+                        )}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -360,7 +425,7 @@ const Checkout = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isCheckoutBlocked}
                 className="w-full px-8 py-4 bg-accent text-accent-foreground border border-accent hover:bg-foreground hover:border-foreground hover:text-background transition-all duration-300 uppercase tracking-widest text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent disabled:hover:border-accent disabled:hover:text-accent-foreground flex items-center justify-center gap-3"
                 data-testid="proceed-payment-button"
               >
@@ -424,7 +489,7 @@ const Checkout = () => {
                 {t("Subtotal", "Subtotal")}
               </span>
               <span className="font-mono font-bold">
-                {getTotal().toFixed(2)}€
+                {subtotal.toFixed(2)}€
               </span>
             </div>
 
@@ -433,16 +498,18 @@ const Checkout = () => {
                 {t("Envio", "Shipping")} ({selectedCountry.label})
               </span>
               <span className="font-mono font-bold">
-                {shippingCost === 0
-                  ? t("Grátis", "Free")
-                  : `${shippingCost.toFixed(2)}€`}
+                {isCheckoutBlocked
+                  ? t("Contactar", "Contact us")
+                  : shippingCost === 0
+                    ? t("Grátis", "Free")
+                    : `${shippingCost.toFixed(2)}€`}
               </span>
             </div>
 
             <p className="text-xs text-muted-foreground font-serif leading-relaxed">
               {t(
                 SHIPPING_NOTE,
-                "Free shipping to Portugal. Shipping to EEC/EU countries: €5. Purchases outside Europe, contact hello@weloveloveletters.com.",
+                "Free shipping to Europe on purchases over €50. Under €50: Portugal €8, rest of Europe €15. Purchases outside Europe, contact hello@weloveloveletters.com.",
               )}
             </p>
 

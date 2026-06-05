@@ -89,8 +89,6 @@ const Shop = () => {
     !["tshirts", "totebags"].includes(selectedCategory) ||
     Boolean(selectedCollection);
 
-  const shouldShowProductGrid = !['tshirts', 'totebags'].includes(selectedCategory) || Boolean(selectedCollection);
-
   return (
     <div
       className="min-h-screen pt-16 md:pt-20 overflow-x-hidden"

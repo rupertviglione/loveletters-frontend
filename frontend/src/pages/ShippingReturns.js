@@ -37,8 +37,8 @@ const ShippingReturns = () => {
             </h2>
             <p className="font-fraunces text-base md:text-lg leading-relaxed">
               {t(
-                "Processamos as encomendas em 2 a 4 dias úteis. Envio gratuito para Portugal. Envio para países da CEE: 5€.",
-                "We process orders within 2 to 4 business days. Free shipping to Portugal. Shipping to EEC/EU countries: €5.",
+                "Processamos as encomendas em 2 a 4 dias úteis. Envio gratuito para a Europa em compras acima de 50€. Abaixo de 50€: Portugal 8€, resto da Europa 15€.",
+                "We process orders within 2 to 4 business days. Free shipping to Europe on purchases over €50. Under €50: Portugal €8, rest of Europe €15.",
               )}
             </p>
             <p className="font-fraunces text-base md:text-lg leading-relaxed">
