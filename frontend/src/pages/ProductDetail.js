@@ -52,7 +52,9 @@ const ProductDetail = () => {
         if (availableSizes.length) setSelectedSize(availableSizes[0]);
         if (availableColors.length) setSelectedColor(availableColors[0]);
       } catch (error) {
-        console.error("Error fetching product:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Error fetching product:", error);
+        }
       } finally {
         setLoading(false);
       }
@@ -191,7 +193,7 @@ const ProductDetail = () => {
                 <ul className="space-y-2">
                   {product.bundle_items.map((item, index) => (
                     <li
-                      key={index}
+                      key={item.id || item.title_pt || item.title_en || `bundle-${index}`}
                       className="font-fraunces text-sm flex items-center gap-2"
                     >
                       <span className="w-1 h-1 bg-accent rounded-full"></span>

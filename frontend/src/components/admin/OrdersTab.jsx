@@ -163,8 +163,10 @@ const OrdersTab = ({ token, onCountsChange }) => {
         ),
       );
       onCountsChange?.();
-    } catch {
-      /* ignore */
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("mark-order-read failed (non-blocking):", err);
+      }
     }
   };
 
@@ -415,7 +417,14 @@ const OrdersTab = ({ token, onCountsChange }) => {
                   <p className="text-sm font-medium mb-2">Produtos:</p>
                   {(order.items || []).length > 0 ? (
                     (order.items || []).map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-600">
+                      <p
+                        key={
+                          item.id ||
+                          item.product_id ||
+                          `${item.product_id || item.title || item.name || "item"}-${idx}`
+                        }
+                        className="text-sm text-gray-600"
+                      >
                         {item.quantity || 1}x{" "}
                         {item.title_pt ||
                           item.title ||

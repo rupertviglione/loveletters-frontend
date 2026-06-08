@@ -228,7 +228,7 @@ const ProductForm = ({ product, token, onSave, onCancel }) => {
         {formData.images && formData.images.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {formData.images.map((img, idx) => (
-              <div key={idx} className="relative">
+              <div key={`${img}-${idx}`} className="relative">
                 <img
                   src={img}
                   alt=""

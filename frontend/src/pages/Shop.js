@@ -56,7 +56,9 @@ const Shop = () => {
         const productsData = await getProducts(selectedCategory);
         setProducts(productsData);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Error fetching products:", error);
+        }
       } finally {
         setLoading(false);
       }

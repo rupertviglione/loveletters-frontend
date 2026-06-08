@@ -323,9 +323,14 @@ const Success = () => {
                 const lineTotal = Number(
                   item.line_total ?? item.total ?? item.unit_price * qty ?? 0,
                 );
+                const lineKey =
+                  item.id ||
+                  item.product_id ||
+                  item.itemId ||
+                  `${item.product_id || item.name || title}-${idx}`;
                 return (
                   <div
-                    key={idx}
+                    key={lineKey}
                     className="flex justify-between items-start py-3 font-mono text-sm gap-4"
                   >
                     <div>

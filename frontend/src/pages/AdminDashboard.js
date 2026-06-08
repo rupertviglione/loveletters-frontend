@@ -49,7 +49,9 @@ const AdminDashboard = () => {
       setUnseenOrders(Number(data?.orders || 0));
       setUnseenContacts(Number(data?.messages ?? data?.contacts ?? 0));
     } catch (err) {
-      console.error("Error fetching admin notifications:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Error fetching admin notifications:", err);
+      }
     }
   }, [token]);
 

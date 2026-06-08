@@ -181,7 +181,9 @@ const Checkout = () => {
 
       throw new Error("Checkout response missing redirect URL");
     } catch (err) {
-      console.error("Error creating checkout session:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Error creating checkout session:", err);
+      }
       setError(
         t(
           "Erro ao processar pagamento. Tente novamente.",

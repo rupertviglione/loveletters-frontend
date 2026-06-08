@@ -46,7 +46,6 @@ const ReplyModal = ({ contact, token, onClose, onSent }) => {
       if (process.env.NODE_ENV !== "production" && resp?.timing_ms) {
         const totalClient = Math.round(performance.now() - t0);
         const { total = "?", parse = "?", enqueue = "?" } = resp.timing_ms;
-        // eslint-disable-next-line no-console
         console.debug(
           `[reply timing] server total=${total}ms (parse=${parse}, enqueue=${enqueue}) · client=${totalClient}ms`,
         );
@@ -152,7 +151,7 @@ const ReplyModal = ({ contact, token, onClose, onSent }) => {
               <ul className="mt-2 space-y-1 text-xs text-gray-700">
                 {attachments.map((file, idx) => (
                   <li
-                    key={idx}
+                    key={`${file.name}-${file.size}-${file.lastModified ?? idx}`}
                     className="flex items-center justify-between bg-gray-50 rounded px-2 py-1"
                   >
                     <span className="truncate mr-2">

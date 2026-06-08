@@ -65,7 +65,9 @@ const Contact = () => {
 
       setFormData({ name: "", email: "", message: "" });
     } catch (error) {
-      console.error("Error sending message:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Error sending message:", error);
+      }
       // Surface 422 field errors when the backend rejects the payload.
       if (error?.status === 422) {
         toast.error(

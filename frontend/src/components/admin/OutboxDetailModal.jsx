@@ -110,7 +110,7 @@ const OutboxDetailModal = ({
                     <ul className="space-y-1">
                       {item.attachments.map((a, i) => (
                         <li
-                          key={i}
+                          key={`${a.filename || "attach"}-${a.size ?? i}`}
                           className="text-xs flex flex-wrap gap-2 items-baseline"
                         >
                           <span className="font-mono">{a.filename}</span>

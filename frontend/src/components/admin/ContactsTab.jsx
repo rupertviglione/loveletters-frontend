@@ -83,8 +83,10 @@ const ContactsTab = ({ token, onCountsChange }) => {
         ),
       );
       onCountsChange?.();
-    } catch {
-      /* ignore */
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("mark-contact-read failed (non-blocking):", err);
+      }
     }
   };
 
@@ -208,7 +210,12 @@ const ContactsTab = ({ token, onCountsChange }) => {
                         </p>
                         {replies.map((reply, idx) => (
                           <div
-                            key={idx}
+                            key={
+                              reply.queued_at ||
+                              reply.sent_at ||
+                              reply.created_at ||
+                              `reply-${idx}`
+                            }
                             className="text-xs text-gray-600 bg-gray-50 rounded p-2"
                           >
                             <p className="font-semibold">
