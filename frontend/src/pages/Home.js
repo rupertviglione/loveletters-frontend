@@ -126,7 +126,7 @@ const Home = () => {
         </Link>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes banner-scroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }

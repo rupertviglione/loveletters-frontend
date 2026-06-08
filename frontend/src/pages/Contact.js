@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { submitContact, logApiError } from "@/services/api";
+import { submitContact, logApiError, formatApiError } from "@/services/api";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -66,7 +66,17 @@ const Contact = () => {
       setFormData({ name: "", email: "", message: "" });
     } catch (error) {
       console.error("Error sending message:", error);
-      toast.error(t("Erro ao enviar.", "Error sending."));
+      // Surface 422 field errors when the backend rejects the payload.
+      if (error?.status === 422) {
+        toast.error(
+          t(
+            `Verifica os campos: ${formatApiError(error, "dados inválidos")}`,
+            `Please check the fields: ${formatApiError(error, "invalid data")}`,
+          ),
+        );
+      } else {
+        toast.error(t("Erro ao enviar.", "Error sending."));
+      }
     } finally {
       setLoading(false);
     }
@@ -235,7 +245,7 @@ const Contact = () => {
         </Link>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes banner-scroll {
           0% {
             transform: translateX(0);

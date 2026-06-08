@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Package, ShoppingBag, Mail, Send } from "lucide-react";
+import { LogOut, Package, ShoppingBag, Mail, Send, Clock } from "lucide-react";
 import { adminVerify, adminGetNotifications } from "@/services/api";
 import ProductsTab from "@/components/admin/ProductsTab";
 import OrdersTab from "@/components/admin/OrdersTab";
@@ -8,17 +8,25 @@ import ContactsTab from "@/components/admin/ContactsTab";
 import OutboxTab from "@/components/admin/OutboxTab";
 
 const NOTIFY_POLL_MS = 30000;
+// Threshold (in minutes) below which we surface a "session expires soon" hint.
+const EXPIRY_WARN_THRESHOLD_MIN = 30;
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("products");
   const [unseenOrders, setUnseenOrders] = useState(0);
   const [unseenContacts, setUnseenContacts] = useState(0);
+  const [expiresInMin, setExpiresInMin] = useState(null);
+  const autoLogoutRef = useRef(null);
   const navigate = useNavigate();
   const token = localStorage.getItem("admin_token");
 
   const verifyAuth = useCallback(async () => {
     try {
-      await adminVerify(token);
+      const data = await adminVerify(token);
+      const mins = Number(data?.token_expires_in_minutes);
+      if (Number.isFinite(mins) && mins >= 0) {
+        setExpiresInMin(Math.floor(mins));
+      }
     } catch (err) {
       // 401 is handled globally in api.js (hard redirect with ?expired=1).
       // For other errors (transient network), keep the user where they are.
@@ -70,20 +78,52 @@ const AdminDashboard = () => {
     navigate("/admin/login");
   };
 
+  // Auto-logout exactly when the token expires (server-reported), so the
+  // operator isn't surprised by a stale 401 mid-action.
+  useEffect(() => {
+    if (autoLogoutRef.current) {
+      clearTimeout(autoLogoutRef.current);
+      autoLogoutRef.current = null;
+    }
+    if (expiresInMin == null || expiresInMin < 0) return undefined;
+    const ms = Math.max(1000, expiresInMin * 60 * 1000);
+    autoLogoutRef.current = setTimeout(() => {
+      localStorage.removeItem("admin_token");
+      window.location.replace("/admin/login?expired=1");
+    }, ms);
+    return () => {
+      if (autoLogoutRef.current) clearTimeout(autoLogoutRef.current);
+    };
+  }, [expiresInMin]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex justify-between items-center py-4 gap-3">
             <h1 className="text-2xl font-syne font-bold">BACKOFFICE</h1>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-accent transition-colors"
-              data-testid="admin-logout"
-            >
-              <LogOut size={20} />
-              <span>Sair</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {expiresInMin != null &&
+                expiresInMin >= 0 &&
+                expiresInMin <= EXPIRY_WARN_THRESHOLD_MIN && (
+                  <span
+                    className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-medium"
+                    data-testid="admin-session-expiry"
+                    title={`Sessão expira em ${expiresInMin} min`}
+                  >
+                    <Clock size={12} />
+                    Sessão expira em {expiresInMin} min
+                  </span>
+                )}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-accent transition-colors"
+                data-testid="admin-logout"
+              >
+                <LogOut size={20} />
+                <span>Sair</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

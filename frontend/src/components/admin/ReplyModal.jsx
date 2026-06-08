@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Reply, X, Paperclip, Loader } from "lucide-react";
-import { adminReplyContact } from "@/services/api";
+import { adminReplyContact, formatApiError } from "@/services/api";
 
 /**
  * Modal for replying to a contact message via email + optional attachments.
@@ -34,12 +34,23 @@ const ReplyModal = ({ contact, token, onClose, onSent }) => {
       return;
     }
     setSending(true);
+    const t0 = performance.now();
     try {
       const resp = await adminReplyContact(token, contactId, {
         subject: subject.trim(),
         message: message.trim(),
         attachments,
       });
+      // Dev-only: log server-side timings (build 2026-06-hardening onwards).
+      // Useful to distinguish backend slowness from upload overhead.
+      if (process.env.NODE_ENV !== "production" && resp?.timing_ms) {
+        const totalClient = Math.round(performance.now() - t0);
+        const { total = "?", parse = "?", enqueue = "?" } = resp.timing_ms;
+        // eslint-disable-next-line no-console
+        console.debug(
+          `[reply timing] server total=${total}ms (parse=${parse}, enqueue=${enqueue}) · client=${totalClient}ms`,
+        );
+      }
       const success =
         resp?.success !== false && resp?.sent !== false;
       if (!success) {
@@ -55,9 +66,7 @@ const ReplyModal = ({ contact, token, onClose, onSent }) => {
       }
       onSent?.();
     } catch (err) {
-      const detail =
-        err?.data?.detail || err?.data?.message || err?.message || "";
-      toast.error(`Erro ao enviar resposta. ${detail}`.trim());
+      toast.error(`Erro ao enviar resposta. ${formatApiError(err, "")}`.trim());
     } finally {
       setSending(false);
     }

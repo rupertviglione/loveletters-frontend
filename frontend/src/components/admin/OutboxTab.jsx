@@ -21,6 +21,7 @@ import {
 } from "@/services/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import OutboxDetailModal from "./OutboxDetailModal";
+import DiagnoseResult from "./DiagnoseResult";
 import {
   STATUS_LABEL_PT,
   STATUS_COLOR,
@@ -181,10 +182,10 @@ const OutboxTab = ({ token }) => {
 
   const handleDiagnose = async () => {
     setDiagLoading(true);
-    // The backend's SMTP probe can hang for >90s on certain failure modes.
-    // Enforce a client-side ceiling so the button never stays stuck.
+    // Backend now guarantees a response in ≤15s (build 2026-06-hardening),
+    // so 20s is a generous ceiling.
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await adminEmailDiagnose(token, { signal: controller.signal });
       setDiagOutput(res);
@@ -192,12 +193,18 @@ const OutboxTab = ({ token }) => {
       const aborted = err?.name === "AbortError";
       toast.error(
         aborted
-          ? "Diagnóstico SMTP excedeu 30s — o backend não respondeu."
+          ? "Diagnóstico SMTP excedeu 20s — o backend não respondeu."
           : "Erro ao diagnosticar SMTP",
       );
       setDiagOutput({
         ok: false,
-        error: aborted ? "Timeout (30s) — backend não respondeu" : err?.message || "erro",
+        connection: aborted ? "timeout" : "error",
+        auth: "skipped",
+        send: "skipped",
+        error: aborted
+          ? "Timeout (20s) — backend não respondeu"
+          : err?.message || "erro",
+        error_type: aborted ? "TimeoutError" : err?.name || "Error",
       });
     } finally {
       clearTimeout(timeout);
@@ -348,29 +355,12 @@ const OutboxTab = ({ token }) => {
         </div>
       </div>
 
-      {/* Diagnostic output */}
+      {/* Diagnostic output (structured + raw fallback) */}
       {diagOutput && (
-        <div className="mb-4 border border-gray-200 rounded-md overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-            <span className="text-xs uppercase tracking-wider font-bold text-gray-700">
-              Diagnóstico SMTP
-            </span>
-            <button
-              type="button"
-              onClick={() => setDiagOutput(null)}
-              className="text-gray-500 hover:text-gray-900"
-              aria-label="Fechar diagnóstico"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <pre
-            className="text-xs bg-gray-900 text-emerald-200 p-3 overflow-auto max-h-72 font-mono"
-            data-testid="outbox-diagnose-output"
-          >
-            {JSON.stringify(diagOutput, null, 2)}
-          </pre>
-        </div>
+        <DiagnoseResult
+          result={diagOutput}
+          onClose={() => setDiagOutput(null)}
+        />
       )}
 
       {/* Table */}

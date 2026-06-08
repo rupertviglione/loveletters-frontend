@@ -217,7 +217,7 @@ const Shop = () => {
 
       {/* NO BANNER in Shop page - removed as requested */}
 
-      <style jsx>{`
+      <style>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }

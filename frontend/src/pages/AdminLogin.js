@@ -22,7 +22,17 @@ const AdminLogin = () => {
       localStorage.setItem("admin_token", data.access_token);
       navigate("/admin/dashboard");
     } catch (err) {
-      setError(err?.data?.detail || "Connection error. Please try again.");
+      if (err?.status === 429) {
+        const retryAfter =
+          err?.response?.headers?.get?.("Retry-After") ||
+          err?.data?.retry_after ||
+          "60";
+        setError(
+          `Demasiadas tentativas. Tenta novamente em ${retryAfter}s.`,
+        );
+      } else {
+        setError(err?.data?.detail || "Connection error. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

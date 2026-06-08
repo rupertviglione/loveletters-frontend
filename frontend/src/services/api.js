@@ -100,6 +100,35 @@ export class ApiRequestError extends Error {
   }
 }
 
+/**
+ * Best-effort extractor for FastAPI error responses. Handles:
+ *  - 422 with `detail: [ {loc, msg, type}, ... ]`  (validation)
+ *  - 4xx/5xx with `detail: "string"`
+ *  - 4xx with `detail: { message: "..." }`
+ *  - anything else → fallback string.
+ */
+export const formatApiError = (err, fallback = "Erro inesperado.") => {
+  const detail = err?.data?.detail;
+  if (Array.isArray(detail)) {
+    // FastAPI 422 — render first 2 field errors compactly.
+    return detail
+      .slice(0, 2)
+      .map((d) => {
+        const field =
+          Array.isArray(d?.loc) && d.loc.length > 1
+            ? d.loc.slice(1).join(".")
+            : d?.loc?.[0] || "campo";
+        return `${field}: ${d?.msg || "inválido"}`;
+      })
+      .join(" · ");
+  }
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object") {
+    return detail.message || detail.error || JSON.stringify(detail);
+  }
+  return err?.message || fallback;
+};
+
 // ---------------------------------------------------------------------------
 // 401 handling (token expiry on admin routes)
 // ---------------------------------------------------------------------------

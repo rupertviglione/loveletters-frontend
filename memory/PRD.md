@@ -89,6 +89,49 @@ Do NOT touch the public catalogue, static pages, admin login, or checkout-sessio
   `POST /api/admin/email/diagnose` hangs >90s on Render; frontend now applies a
   client-side 30s `AbortController` timeout and surfaces a friendly toast.
 
+## Iteration 8 (2026-06-08) — Backend hardening alignment
+Backend shipped build `2026-06-hardening` with: bounded diagnose (≤15s, always
+JSON), truncated body in outbox listing (`body_truncated` / `body_full_length`),
+login rate-limit (HTTP 429 + `Retry-After`), `token_expires_in_minutes` on
+verify, 422 with CORS headers, optional pagination on /products, and
+`timing_ms` on /reply.
+
+Frontend adjustments:
+- **DiagnoseResult.jsx** — new structured panel for `/email/diagnose`:
+  overall pill (`SONDA OK` / `SONDA FALHOU` + `duration_ms`), three step badges
+  (connect / auth / send) coloured by value, error line with `error_type`,
+  SMTP config block (host:port, use_tls, auth_user, from_email, password set
+  flag + length), collapsible raw JSON. `OutboxTab.jsx` swapped its raw `<pre>`
+  for `<DiagnoseResult />`. Diagnose AbortController reduced from 30s → 20s.
+- **AdminLogin.js** — `429` is now mapped to a friendly
+  `Demasiadas tentativas. Tenta novamente em {Retry-After}s.` message instead
+  of "Invalid credentials" (reads the response header via `err.response.headers`).
+- **AdminDashboard.js** — reads `token_expires_in_minutes` from `/admin/verify`,
+  shows an amber `Sessão expira em N min` pill in the header when N ≤ 30 (also
+  schedules a `setTimeout` that auto-logs out exactly at expiry to avoid stale
+  401s mid-action).
+- **api.js → `formatApiError(err, fallback)`** — central helper that
+  understands FastAPI shapes: array of `{loc, msg, type}` (422), string detail,
+  and `{message|error}` objects. Used by Contact and ReplyModal.
+- **Contact.js** — 422 from `POST /api/contact` now surfaces the first 2 field
+  errors via `formatApiError` (`Verifica os campos: email: field required`).
+- **ReplyModal.jsx** — switched to `formatApiError`; in dev builds, prints a
+  console.debug line with server-side `timing_ms.total` (and parse / enqueue
+  splits) vs the client round-trip, useful to isolate network from backend.
+- **`<style jsx>` warning fix** — removed the styled-jsx attribute from
+  Home.js, Shop.js and Contact.js (CRA doesn't process it; React 19 was
+  warning "Received true for a non-boolean attribute jsx"). The `<style>`
+  tags work the same.
+
+Not adopted this round (intentional):
+- `?limit=&skip=` pagination on `/api/products` — current catalogue
+  comfortably fits under the 2000-item ceiling; can be added when traffic
+  justifies it.
+- The Outbox listing now truncates `body` to 500 chars server-side. Because
+  the row UI never showed `body` (only subject is truncated client-side) and
+  the detail modal already fetches `GET /api/admin/mail-outbox/{id}` for the
+  full body, no UI work was needed.
+
 ## Iteration 7 (2026-06-08) — what was added
 - **Backoffice Outbox tab** (`/app/frontend/src/components/admin/OutboxTab.jsx` +
   `OutboxDetailModal.jsx` + `outboxHelpers.js`). 4 status pills, filters by
