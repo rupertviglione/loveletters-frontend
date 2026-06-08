@@ -402,10 +402,11 @@ export const adminRetryAllOutbox = (token) =>
     headers: auth(token),
   });
 
-export const adminEmailDiagnose = (token) =>
+export const adminEmailDiagnose = (token, { signal } = {}) =>
   apiFetch("/admin/email/diagnose", {
     method: "POST",
     headers: auth(token),
+    signal,
   });
 
 export const adminEmailTest = (token) =>

@@ -84,6 +84,34 @@ Do NOT touch the public catalogue, static pages, admin login, or checkout-sessio
   (verifyAuth 401 redirect lost `?expired=1`; `response.clone()` crash).
 - Testing agent iteration_6 — refactor pass: 13/13 scenarios PASS, no regressions.
   Archived order `LL-20260605-4B5493` left intact for re-test.
+- Testing agent iteration_7 (2026-06-08) — Outbox + banner + Success simplification:
+  15/16 scenarios PASS. The only failure is backend-side: live
+  `POST /api/admin/email/diagnose` hangs >90s on Render; frontend now applies a
+  client-side 30s `AbortController` timeout and surfaces a friendly toast.
+
+## Iteration 7 (2026-06-08) — what was added
+- **Backoffice Outbox tab** (`/app/frontend/src/components/admin/OutboxTab.jsx` +
+  `OutboxDetailModal.jsx` + `outboxHelpers.js`). 4 status pills, filters by
+  status/kind, free-text search, row-level Retry/Cancel, bulk "Retry all failed"
+  (confirm dialog), "Diagnose SMTP" + "Send test email" buttons, polling every
+  30s, kind humanisation in PT. Wired to:
+    - `GET /api/admin/mail-outbox`, `GET /api/admin/mail-outbox/{id}`,
+    - `GET /api/admin/mail-outbox/stats`,
+    - `POST /api/admin/mail-outbox/{id}/{retry,cancel}`,
+    - `POST /api/admin/mail-outbox/retry-all`,
+    - `POST /api/admin/email/diagnose` (with 30s AbortController timeout),
+    - `POST /api/admin/email/test`.
+- **Free-shipping banner** (`/app/frontend/src/components/FreeShippingBanner.js` +
+  `SiteConfigContext.js`). Fixed red top bar, copy + threshold sourced from
+  `GET /api/config`, hidden on `/contact`, `/shipping-returns`, `/admin/*`.
+  Header now offsets `top-[28px]` when banner is visible.
+- **Cart free-shipping hint** — `Faltam X€ para envio gratuito.` when subtotal
+  < threshold; `Envio gratuito desbloqueado!` once subtotal ≥ threshold.
+  testids: `free-shipping-progress`, `free-shipping-unlocked`.
+- **Success page** — simplified copy to
+  `O teu pedido foi confirmado. Enviámos a confirmação para {email}.` (the
+  "Estamos a tentar" warning fork was removed entirely; `emailWarning` state
+  retired).
 
 ## Not changed (per requirements)
 - Catalogue, product detail, filters, /shop, /product/[id].
@@ -93,13 +121,17 @@ Do NOT touch the public catalogue, static pages, admin login, or checkout-sessio
 
 ## Backlog / next actions
 - **Backend (out of frontend scope, reported to user)**:
+  - `POST /api/admin/email/diagnose` hangs indefinitely on Render — needs a
+    server-side asyncio timeout around the SMTP probe and a guaranteed JSON
+    response on failure.
   - `POST /api/admin/contacts/{id}/reply` has slow/timeout-prone SMTP send;
     move to background task / queue.
   - `GET /api/checkout/status/{session_id}` returns 500 for archived sessions;
     frontend already falls back to `/orders/by-session` but the endpoint should
-    be fixed server-side. (iter6 observed the 500 sometimes resolves to a 200
-    now — backend may have been touched.)
+    be fixed server-side.
 - **Frontend nice-to-haves**:
+  - Extract `<OutboxTable />`, `<OutboxActions />`, `<OutboxFilters />` from
+    OutboxTab.jsx (~520 lines) if more features land.
   - Optional `?notify=false` toggle on the Save button for silent status updates.
   - Add a "copy tracking URL" button on shipped orders.
   - Highlight the `webmail_url` from the reply response so the operator can

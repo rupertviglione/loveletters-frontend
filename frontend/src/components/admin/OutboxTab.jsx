@@ -181,13 +181,26 @@ const OutboxTab = ({ token }) => {
 
   const handleDiagnose = async () => {
     setDiagLoading(true);
+    // The backend's SMTP probe can hang for >90s on certain failure modes.
+    // Enforce a client-side ceiling so the button never stays stuck.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await adminEmailDiagnose(token);
+      const res = await adminEmailDiagnose(token, { signal: controller.signal });
       setDiagOutput(res);
     } catch (err) {
-      toast.error("Erro ao diagnosticar SMTP");
-      setDiagOutput({ error: err?.message || "erro" });
+      const aborted = err?.name === "AbortError";
+      toast.error(
+        aborted
+          ? "Diagnóstico SMTP excedeu 30s — o backend não respondeu."
+          : "Erro ao diagnosticar SMTP",
+      );
+      setDiagOutput({
+        ok: false,
+        error: aborted ? "Timeout (30s) — backend não respondeu" : err?.message || "erro",
+      });
     } finally {
+      clearTimeout(timeout);
       setDiagLoading(false);
     }
   };
