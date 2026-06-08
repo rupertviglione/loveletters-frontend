@@ -36,7 +36,6 @@ const Success = () => {
   const [status, setStatus] = useState("checking"); // checking | success | timeout | error
   const [order, setOrder] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
-  const [emailWarning, setEmailWarning] = useState(false);
   const [pollKey, setPollKey] = useState(0); // increment to restart polling
 
   const clearedRef = useRef(false);
@@ -60,7 +59,6 @@ const Success = () => {
     cancelledRef.current = false;
     attemptsRef.current = 0;
     setStatus("checking");
-    setEmailWarning(false);
 
     const tryFallbackOrder = async () => {
       try {
@@ -84,9 +82,6 @@ const Success = () => {
           fallbackOrder?.customer?.email ||
           "",
       );
-      if (resp && resp.confirmation_email_sent_at === null) {
-        setEmailWarning(true);
-      }
       setStatus("success");
       if (!clearedRef.current) {
         clearCart();
@@ -294,21 +289,16 @@ const Success = () => {
 
         <div className="border border-border p-3 md:p-4 mb-8 mx-auto max-w-xl flex items-start gap-3">
           <Mail className="text-accent shrink-0 mt-0.5" size={20} />
-          <p className="font-serif text-sm md:text-base leading-relaxed">
-            {emailWarning
+          <p className="font-serif text-sm md:text-base leading-relaxed" data-testid="success-email-message">
+            {customerEmail
               ? t(
-                  `O teu pedido foi confirmado. Estamos a tentar enviar o email de confirmação${customerEmail ? ` para ${customerEmail}` : ""}, se não chegar contacta-nos.`,
-                  `Your order is confirmed. We are trying to send the confirmation email${customerEmail ? ` to ${customerEmail}` : ""}; if it does not arrive, contact us.`,
+                  `O teu pedido foi confirmado. Enviámos a confirmação para ${customerEmail}.`,
+                  `Your order is confirmed. We sent the confirmation to ${customerEmail}.`,
                 )
-              : customerEmail
-                ? t(
-                    `Enviámos um email de confirmação para ${customerEmail}.`,
-                    `We sent a confirmation email to ${customerEmail}.`,
-                  )
-                : t(
-                    "Enviámos um email de confirmação.",
-                    "We sent a confirmation email.",
-                  )}
+              : t(
+                  "O teu pedido foi confirmado. Enviámos a confirmação por email.",
+                  "Your order is confirmed. We sent the confirmation by email.",
+                )}
           </p>
         </div>
 

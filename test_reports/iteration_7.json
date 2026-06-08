@@ -1,0 +1,74 @@
+{
+  "summary": "Frontend-only review of Love Letters: Outbox tab, free-shipping banner visibility, cart free-shipping hint, and Success page message simplification. 6/7 feature buckets pass cleanly; the only failing flow is the Outbox 'Diagnosticar SMTP' button which is blocked by the live Render backend endpoint /api/admin/email/diagnose hanging (>90s, no response). Frontend code itself is correct.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/admin/email/diagnose",
+        "issue": "Live Render backend (loveletters-backend.onrender.com) hangs indefinitely. curl with -m 90 returns HTTP 000 / timeout. This blocks the 'Diagnosticar SMTP' button in the new Outbox tab — the spinner spins forever and outbox-diagnose-output never renders. Reproducible with: curl -X POST -H 'Authorization: Bearer <token>' https://loveletters-backend.onrender.com/api/admin/email/diagnose -m 90 -> HTTP=000. (Sibling endpoint POST /api/admin/email/test works fine, ~500ms, returns outbox_id.)",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Outbox > Diagnosticar SMTP",
+        "issue": "Frontend correctly fires POST /api/admin/email/diagnose and shows a disabled spinner, but because the backend endpoint hangs (>90s) the diag output panel is never rendered. Frontend should probably enforce a client-side timeout (e.g. 30s) and surface an error toast instead of leaving the button stuck.",
+        "affected_selectors": ["[data-testid='outbox-diagnose']", "[data-testid='outbox-diagnose-output']"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Console (any page on first load)",
+        "issues": [
+          "React warning: 'Received true for a non-boolean attribute jsx' coming from a styled tag (likely a <style jsx> remnant in some component). Cosmetic; doesn't break anything but pollutes the dev console."
+        ]
+      }
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_7.json"],
+  "verified_features": [
+    "Free shipping banner visible on / /shop /cart /checkout with text 'ENVIO GRATUITO NA EUROPA EM COMPRAS ACIMA DE 50€' (red bar, position:fixed top:0 z-60).",
+    "Free shipping banner hidden on /contact, /shipping-returns, /admin/login, /admin/dashboard.",
+    "Cart subtotal 25€ -> [data-testid=free-shipping-progress] renders 'Faltam 25.00€ para envio gratuito.' (validated by seeding localStorage 'll-cart' since live backend product fetch was cold-starting).",
+    "Cart subtotal 75€ -> [data-testid=free-shipping-unlocked] renders 'Envio gratuito desbloqueado!' and progress hint is gone.",
+    "Admin login with tmargaridarodrigues / weloveloveletters2026!admin redirects to /admin/dashboard.",
+    "Backoffice has 4 tabs: PRODUTOS / ENCOMENDAS / MENSAGENS / OUTBOX. data-testid='admin-tab-outbox' present and clickable.",
+    "Outbox stats pills: sent=14, pending=0, failed=0, cancelled=0 with correct PT labels (ENVIADO/PENDENTE/FALHOU/CANCELADO) via GET /api/admin/mail-outbox/stats.",
+    "Outbox table shows all 14 existing items with columns Quando / Para / Assunto / Tipo / Estado / Tent. / Último erro / Acções.",
+    "context.kind humanisation works: 'contact_reply_admin_copy' -> 'Cópia da resposta -> loja', 'order_customer_notification' -> 'Encomenda -> cliente', 'contact_admin_notification' -> 'Contacto novo -> loja', etc.",
+    "Filters [data-testid=outbox-filter-status] and [data-testid=outbox-filter-kind] present and re-trigger fetchAll.",
+    "Client-side search [data-testid=outbox-search] filters rows: 'zzznoresultsxyz' -> 0 rows; clearing restores 14.",
+    "Row click opens [data-testid=outbox-detail-modal] which fetches GET /api/admin/mail-outbox/{id}.",
+    "[data-testid=outbox-send-test] calls POST /api/admin/email/test successfully (validated server-side: 200 with outbox_id).",
+    "[data-testid=outbox-retry-all] opens ConfirmDialog with 'Re-tentar' confirm button that calls POST /api/admin/mail-outbox/retry-all.",
+    "[data-testid=outbox-refresh] is present (covers polling-doesn't-crash requirement).",
+    "Success.js source code: 'Estamos a tentar' substring is ABSENT (grep). 'Enviámos a confirmação para ${customerEmail}.' template is present at line 295, with data-testid='success-email-message' on the <p>."
+  ],
+  "action_items": [
+    "Investigate POST /api/admin/email/diagnose on the live Render backend — it hangs >90s. Likely an SMTP connect attempt that has no socket timeout. Add a server-side timeout and return a JSON payload even on SMTP failure (so the frontend can render diag output as the spec asks).",
+    "Add a client-side fetch timeout (e.g. 30s) to adminEmailDiagnose() in /app/frontend/src/services/api.js — currently the button can stay disabled forever if the backend hangs.",
+    "Investigate the React 'Received true for a non-boolean attribute jsx' warning (likely a leftover <style jsx> somewhere — search for 'jsx={true}' or '<style jsx').",
+    "Optional: emit a more explicit Cart product carousel so end-to-end add-to-cart can be tested without seeding localStorage."
+  ],
+  "critical_code_review_comments": [
+    "OutboxTab.jsx (~510 lines) is approaching the 700-line guideline but still readable; consider extracting <OutboxTable />, <OutboxActions /> and <OutboxFilters /> sub-components if it grows further.",
+    "STATUS_OPTIONS in outboxHelpers.js duplicates the keys of STATUS_LABEL_PT — could be derived from STATUS_LABEL_PT to keep them in sync (same DRY note as KIND_OPTIONS which IS derived).",
+    "FreeShippingBanner uses position:fixed top:0 z:60 but Header has its own top padding logic (pt-24 / pt-32 on pages). Verified visually that the banner sits ABOVE the header on home/shop/cart, but the Header itself does NOT shift down to accommodate the banner — on some mobile widths the banner could overlap the header. Worth a quick visual QA at 390px.",
+    "adminEmailDiagnose() has no client-side timeout; with the live backend hanging, the UX is poor (see action items)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "n/a (skipped per request — but I did probe /api/admin/email/{diagnose,test} via curl)",
+    "frontend": "~95% (15 of 16 feature checks pass; only diag-output rendering blocked by live backend hang)"
+  },
+  "test_credentials": "Admin: tmargaridarodrigues / weloveloveletters2026!admin on https://loveletters-backend.onrender.com (matches /app/memory/test_credentials.md).",
+  "seed_data_creation": "Used localStorage 'll-cart' seed (item price 25€ then 75€) to validate the Cart free-shipping progress/unlocked states without needing the live /api/products endpoint (which was cold-starting). Cleaned up after.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Live backend on Render cold-starts; first GET /api/config / /api/products can take 8-15s and may even hard-time-out. /api/admin/email/diagnose currently hangs server-side >90s — do NOT rely on it for UI tests. Use the localStorage 'll-cart' trick to seed cart state. Admin token can be obtained via curl POST /api/admin/login.",
+  "rca_of_the_issue": "Diagnose button does not render output -> root cause is server-side: POST /api/admin/email/diagnose on the live Render deployment hangs indefinitely (HTTP 000 after 90s). Confirmed via curl with the same token that succeeds for /api/admin/email/test. Frontend code path is correct (handleDiagnose -> setDiagOutput(res); also catches errors). Fix: backend must (a) wrap the SMTP probe in an asyncio.wait_for with a sensible timeout and (b) always return a JSON body with {ok: false, error: ...} on failure so the frontend's <pre data-testid='outbox-diagnose-output'> can render."
+}

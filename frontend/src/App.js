@@ -5,8 +5,10 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { CartProvider } from '@/contexts/CartContext';
+import { SiteConfigProvider } from '@/contexts/SiteConfigContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import FreeShippingBanner from '@/components/FreeShippingBanner';
 import Home from '@/pages/Home';
 import '@/App.css';
 
@@ -33,8 +35,10 @@ function App() {
       <BrowserRouter>
         <ThemeProvider>
           <LanguageProvider>
-            <CartProvider>
-              <Routes>
+            <SiteConfigProvider>
+              <CartProvider>
+                <FreeShippingBanner />
+                <Routes>
                 {/* Admin Routes (no header/footer) */}
                 <Route path="/admin/login" element={
                   <Suspense fallback={<PageLoader />}>
@@ -81,7 +85,8 @@ function App() {
                   </div>
                 } />
               </Routes>
-            </CartProvider>
+              </CartProvider>
+            </SiteConfigProvider>
           </LanguageProvider>
         </ThemeProvider>
       </BrowserRouter>

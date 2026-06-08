@@ -2,13 +2,20 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
+import { Trash2, Plus, Minus, Truck, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Cart = () => {
   const { t } = useLanguage();
   const { items, removeItem, updateQuantity, getTotal } = useCart();
+  const { config } = useSiteConfig();
   const navigate = useNavigate();
+
+  const threshold = Number(config?.free_shipping_threshold) || 50;
+  const subtotal = getTotal();
+  const missingForFreeShipping = Math.max(0, threshold - subtotal);
+  const showFreeShippingHint = items.length > 0;
 
   if (items.length === 0) {
     return (
@@ -128,6 +135,36 @@ const Cart = () => {
                 <span>{t('Envio', 'Shipping')}</span>
                 <span>{t('Calculado no checkout', 'Calculated at checkout')}</span>
               </div>
+
+              {showFreeShippingHint && (
+                missingForFreeShipping > 0 ? (
+                  <div
+                    className="mt-2 flex items-start gap-2 px-3 py-2 border border-accent/40 bg-accent/5 text-accent rounded text-xs font-mono"
+                    data-testid="free-shipping-progress"
+                  >
+                    <Truck size={14} className="mt-0.5 shrink-0" />
+                    <span>
+                      {t(
+                        `Faltam ${missingForFreeShipping.toFixed(2)}€ para envio gratuito.`,
+                        `${missingForFreeShipping.toFixed(2)}€ to free shipping.`
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    className="mt-2 flex items-start gap-2 px-3 py-2 border border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 rounded text-xs font-mono"
+                    data-testid="free-shipping-unlocked"
+                  >
+                    <CheckCircle2 size={14} className="mt-0.5 shrink-0" />
+                    <span>
+                      {t(
+                        'Envio gratuito desbloqueado!',
+                        'Free shipping unlocked!'
+                      )}
+                    </span>
+                  </div>
+                )
+              )}
             </div>
 
             <div className="flex justify-between items-center mb-6">

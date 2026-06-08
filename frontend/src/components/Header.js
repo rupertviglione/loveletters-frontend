@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Moon, Sun } from 'lucide-react';
+import { isFreeShippingBannerVisible } from '@/components/FreeShippingBanner';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -12,6 +13,7 @@ const Header = () => {
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
+  const bannerVisible = isFreeShippingBannerVisible(location.pathname);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -19,7 +21,7 @@ const Header = () => {
 
   return (
     <header 
-      className="fixed top-0 w-full z-50 transition-all duration-300 bg-background/40 backdrop-blur-sm border-b border-border/30"
+      className={`fixed w-full z-50 transition-all duration-300 bg-background/40 backdrop-blur-sm border-b border-border/30 ${bannerVisible ? 'top-[28px] md:top-[30px]' : 'top-0'}`}
       data-testid="header"
       style={{ padding: '8px 0' }}
     >

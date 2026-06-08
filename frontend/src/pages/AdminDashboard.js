@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Package, ShoppingBag, Mail } from "lucide-react";
+import { LogOut, Package, ShoppingBag, Mail, Send } from "lucide-react";
 import { adminVerify, adminGetNotifications } from "@/services/api";
 import ProductsTab from "@/components/admin/ProductsTab";
 import OrdersTab from "@/components/admin/OrdersTab";
 import ContactsTab from "@/components/admin/ContactsTab";
+import OutboxTab from "@/components/admin/OutboxTab";
 
 const NOTIFY_POLL_MS = 30000;
 
@@ -113,6 +114,13 @@ const AdminDashboard = () => {
               badge={unseenContacts}
               testId="admin-tab-contacts"
             />
+            <TabButton
+              active={activeTab === "outbox"}
+              onClick={() => setActiveTab("outbox")}
+              icon={<Send size={20} />}
+              label="OUTBOX"
+              testId="admin-tab-outbox"
+            />
           </div>
 
           <div className="p-4 sm:p-6">
@@ -138,6 +146,7 @@ const AdminDashboard = () => {
             {activeTab === "contacts" && (
               <ContactsTab token={token} onCountsChange={fetchNotifications} />
             )}
+            {activeTab === "outbox" && <OutboxTab token={token} />}
           </div>
         </div>
       </div>

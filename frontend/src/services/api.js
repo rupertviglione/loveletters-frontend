@@ -244,6 +244,10 @@ export const getOrderBySession = (sessionId) =>
 export const submitContact = (data) =>
   apiFetch("/contact", { method: "POST", json: data });
 
+// Public site config: currency, free-shipping threshold and banner copy.
+// Never throw on failure — callers fall back to safe defaults.
+export const getSiteConfig = () => apiFetch("/config");
+
 // ---------------------------------------------------------------------------
 // Admin helpers
 // ---------------------------------------------------------------------------
@@ -365,4 +369,47 @@ export const adminLogin = (username, password) =>
   apiFetch("/admin/login", {
     method: "POST",
     json: { username, password },
+  });
+
+// ---------------------------------------------------------------------------
+// Admin · Mail outbox & SMTP diagnostics
+// ---------------------------------------------------------------------------
+
+export const adminGetOutbox = (token, params = {}) =>
+  apiFetch("/admin/mail-outbox", { headers: auth(token), params });
+
+export const adminGetOutboxItem = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}`, { headers: auth(token) });
+
+export const adminGetOutboxStats = (token) =>
+  apiFetch("/admin/mail-outbox/stats", { headers: auth(token) });
+
+export const adminRetryOutbox = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}/retry`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminCancelOutbox = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}/cancel`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminRetryAllOutbox = (token) =>
+  apiFetch("/admin/mail-outbox/retry-all", {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminEmailDiagnose = (token) =>
+  apiFetch("/admin/email/diagnose", {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminEmailTest = (token) =>
+  apiFetch("/admin/email/test", {
+    method: "POST",
+    headers: auth(token),
   });
