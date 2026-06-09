@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Package, ShoppingBag, Mail, Send, Clock } from "lucide-react";
+import { LogOut, Package, ShoppingBag, Mail, Send, Clock, FileText } from "lucide-react";
 import { adminVerify, adminGetNotifications } from "@/services/api";
 import ProductsTab from "@/components/admin/ProductsTab";
 import OrdersTab from "@/components/admin/OrdersTab";
 import ContactsTab from "@/components/admin/ContactsTab";
 import OutboxTab from "@/components/admin/OutboxTab";
+import EmailsTab from "@/components/admin/EmailsTab";
 
 const NOTIFY_POLL_MS = 30000;
 // Threshold (in minutes) below which we surface a "session expires soon" hint.
@@ -163,6 +164,13 @@ const AdminDashboard = () => {
               label="OUTBOX"
               testId="admin-tab-outbox"
             />
+            <TabButton
+              active={activeTab === "emails"}
+              onClick={() => setActiveTab("emails")}
+              icon={<FileText size={20} />}
+              label="EMAILS"
+              testId="admin-tab-emails"
+            />
           </div>
 
           <div className="p-4 sm:p-6">
@@ -189,6 +197,7 @@ const AdminDashboard = () => {
               <ContactsTab token={token} onCountsChange={fetchNotifications} />
             )}
             {activeTab === "outbox" && <OutboxTab token={token} />}
+            {activeTab === "emails" && <EmailsTab token={token} />}
           </div>
         </div>
       </div>

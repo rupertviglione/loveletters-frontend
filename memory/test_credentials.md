@@ -1,20 +1,14 @@
-# Test credentials — Love Letters frontend
+# Test Credentials (Love Letters Backoffice)
 
-> Backend is the **live Render** API at `https://loveletters-backend.onrender.com`.
-> The Stripe key configured on the backend is in **TEST** mode (card `4242 4242 4242 4242`).
+Backend (Render): https://loveletters-backend.onrender.com
+Frontend (local dev): http://localhost:3000
 
-## Backoffice (admin) login
-- URL: `https://weloveloveletters.netlify.app/admin/login`  (or local: `http://localhost:3000/admin/login`)
+## Admin
 - Username: `tmargaridarodrigues`
 - Password: `weloveloveletters2026!admin`
-- Endpoint: `POST /api/admin/login` -> returns `{ access_token, token_type }`
-- Token expiry: 8h. On 401 the UI redirects to `/admin/login?expired=1` (yellow banner).
 
-## Stripe test card
-- Number: `4242 4242 4242 4242`
-- Expiry: any future date
-- CVC: any 3 digits
-
-## Sample data on the live backend (as of 2026-06-05)
-- 1 archived order: `LL-20260605-4B5493` (€36.00, paid) — used for testing the `/success` fallback path
-- 0 active orders / 0 active contacts (clean state)
+## Notes
+- Login URL: `/admin/login`
+- After login redirects to `/admin/dashboard`
+- Email template editor: `/admin/emails/:key` (keys: order_confirmation_customer, order_status_update_customer, contact_acknowledgement_customer)
+- APP_BUILD on /api/health should be: `2026-06-templates-trash-resend-confirmation`

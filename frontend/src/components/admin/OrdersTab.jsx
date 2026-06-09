@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import {
   Save,
@@ -6,6 +6,9 @@ import {
   ArchiveRestore,
   Trash2,
   Loader,
+  MoreVertical,
+  Send,
+  RefreshCw,
 } from "lucide-react";
 import {
   adminGetOrders,
@@ -15,6 +18,9 @@ import {
   adminUnarchiveOrder,
   adminDeleteOrder,
   adminMarkOrderRead,
+  adminResendOrderConfirmation,
+  adminFulfillOrderFromStripe,
+  formatApiError,
 } from "@/services/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
@@ -44,6 +50,28 @@ const OrdersTab = ({ token, onCountsChange }) => {
   const [drafts, setDrafts] = useState({});
   const [savingId, setSavingId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [busyOp, setBusyOp] = useState(null); // `${orderId}:${op}`
+  const menuRef = useRef(null);
+
+  // Close kebab on outside click / Escape.
+  useEffect(() => {
+    if (!openMenuId) return undefined;
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuId(null);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpenMenuId(null);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openMenuId]);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -167,6 +195,38 @@ const OrdersTab = ({ token, onCountsChange }) => {
       if (process.env.NODE_ENV !== "production") {
         console.warn("mark-order-read failed (non-blocking):", err);
       }
+    }
+  };
+
+  const handleResendConfirmation = async (orderId) => {
+    setOpenMenuId(null);
+    setBusyOp(`${orderId}:resend`);
+    try {
+      const res = await adminResendOrderConfirmation(token, orderId);
+      const customerOk = res?.customer_queued ? "Cliente: ok" : "Cliente: —";
+      const adminOk = res?.admin_queued ? "Admin: ok" : "Admin: —";
+      toast.success(`Confirmação reenviada · ${customerOk} / ${adminOk}`);
+    } catch (err) {
+      toast.error(formatApiError(err, "Erro ao reenviar confirmação."));
+    } finally {
+      setBusyOp(null);
+    }
+  };
+
+  const handleFulfillFromStripe = async (orderId) => {
+    setOpenMenuId(null);
+    setBusyOp(`${orderId}:fulfill`);
+    try {
+      const res = await adminFulfillOrderFromStripe(token, orderId);
+      toast.success(
+        res?.message ||
+          `Fulfillment re-executado a partir do Stripe (status: ${res?.status || "—"}).`,
+      );
+      await fetchOrders();
+    } catch (err) {
+      toast.error(formatApiError(err, "Erro ao re-executar fulfillment."));
+    } finally {
+      setBusyOp(null);
     }
   };
 
@@ -412,6 +472,65 @@ const OrdersTab = ({ token, onCountsChange }) => {
                     >
                       <Trash2 size={14} /> Apagar
                     </button>
+
+                    {/* Kebab menu — Reenviar confirmação / Re-executar fulfillment */}
+                    <div className="relative ml-auto" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(
+                            openMenuId === orderId ? null : orderId,
+                          );
+                        }}
+                        disabled={!orderId}
+                        className="inline-flex items-center justify-center w-7 h-7 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                        title="Mais opções"
+                        aria-label="Mais opções"
+                        data-testid={`order-kebab-${orderId || ""}`}
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+                      {openMenuId === orderId && (
+                        <div
+                          ref={menuRef}
+                          className="absolute right-0 mt-1 z-30 min-w-[260px] bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                          role="menu"
+                          data-testid={`order-kebab-menu-${orderId}`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleResendConfirmation(orderId)}
+                            disabled={busyOp === `${orderId}:resend`}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                            data-testid={`order-resend-confirmation-${orderId}`}
+                          >
+                            {busyOp === `${orderId}:resend` ? (
+                              <Loader size={14} className="animate-spin" />
+                            ) : (
+                              <Send size={14} className="text-accent" />
+                            )}
+                            Reenviar email de confirmação
+                          </button>
+                          {order.stripe_session_id && (
+                            <button
+                              type="button"
+                              onClick={() => handleFulfillFromStripe(orderId)}
+                              disabled={busyOp === `${orderId}:fulfill`}
+                              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 border-t border-gray-100"
+                              data-testid={`order-fulfill-stripe-${orderId}`}
+                            >
+                              {busyOp === `${orderId}:fulfill` ? (
+                                <Loader size={14} className="animate-spin" />
+                              ) : (
+                                <RefreshCw size={14} className="text-blue-600" />
+                              )}
+                              Re-executar fulfillment (Stripe)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-sm font-medium mb-2">Produtos:</p>

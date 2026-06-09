@@ -443,3 +443,105 @@ export const adminEmailTest = (token) =>
     method: "POST",
     headers: auth(token),
   });
+
+// ---------------------------------------------------------------------------
+// Admin · Mail outbox · Trash (soft-delete)
+// ---------------------------------------------------------------------------
+
+export const adminTrashOutbox = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}/trash`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminRestoreOutbox = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}/restore`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminBulkTrashOutbox = (token, ids) =>
+  apiFetch("/admin/mail-outbox/bulk-trash", {
+    method: "POST",
+    headers: auth(token),
+    json: { ids },
+  });
+
+export const adminBulkRestoreOutbox = (token, ids) =>
+  apiFetch("/admin/mail-outbox/bulk-restore", {
+    method: "POST",
+    headers: auth(token),
+    json: { ids },
+  });
+
+export const adminBulkDeleteOutbox = (token, ids) =>
+  apiFetch("/admin/mail-outbox/bulk-delete", {
+    method: "POST",
+    headers: auth(token),
+    json: { ids },
+  });
+
+export const adminEmptyOutboxTrash = (token) =>
+  apiFetch("/admin/mail-outbox/trash/empty", {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminDeleteOutbox = (token, id) =>
+  apiFetch(`/admin/mail-outbox/${id}`, {
+    method: "DELETE",
+    headers: auth(token),
+  });
+
+// ---------------------------------------------------------------------------
+// Admin · Email templates
+// ---------------------------------------------------------------------------
+
+export const adminListEmailTemplates = (token) =>
+  apiFetch("/admin/email-templates", { headers: auth(token) });
+
+export const adminGetEmailTemplate = (token, key) =>
+  apiFetch(`/admin/email-templates/${key}`, { headers: auth(token) });
+
+export const adminSaveEmailTemplate = (token, key, payload) =>
+  apiFetch(`/admin/email-templates/${key}`, {
+    method: "PUT",
+    headers: auth(token),
+    json: payload,
+  });
+
+export const adminResetEmailTemplate = (token, key) =>
+  apiFetch(`/admin/email-templates/${key}`, {
+    method: "DELETE",
+    headers: auth(token),
+  });
+
+export const adminPreviewEmailTemplate = (token, key, payload) =>
+  apiFetch(`/admin/email-templates/${key}/preview`, {
+    method: "POST",
+    headers: auth(token),
+    json: payload,
+  });
+
+export const adminSendTestEmailTemplate = (token, key, payload) =>
+  apiFetch(`/admin/email-templates/${key}/send-test`, {
+    method: "POST",
+    headers: auth(token),
+    json: payload,
+  });
+
+// ---------------------------------------------------------------------------
+// Admin · Orders · Resend confirmation + replay Stripe fulfillment
+// ---------------------------------------------------------------------------
+
+export const adminResendOrderConfirmation = (token, id) =>
+  apiFetch(`/admin/orders/${id}/resend-confirmation`, {
+    method: "POST",
+    headers: auth(token),
+  });
+
+export const adminFulfillOrderFromStripe = (token, id) =>
+  apiFetch(`/admin/orders/${id}/fulfill-from-stripe`, {
+    method: "POST",
+    headers: auth(token),
+  });

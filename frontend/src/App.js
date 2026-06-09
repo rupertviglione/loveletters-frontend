@@ -22,6 +22,7 @@ const Contact = lazy(() => import('@/pages/Contact'));
 const ShippingReturns = lazy(() => import('@/pages/ShippingReturns'));
 const AdminLogin = lazy(() => import('@/pages/AdminLogin'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const EmailTemplateEditor = lazy(() => import('@/pages/EmailTemplateEditor'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -38,6 +39,18 @@ function App() {
             <SiteConfigProvider>
               <CartProvider>
                 <FreeShippingBanner />
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    duration: 3000,
+                    style: {
+                      background: 'hsl(var(--card))',
+                      color: 'hsl(var(--card-foreground))',
+                      border: '1px solid hsl(var(--border))',
+                      fontFamily: 'Courier Prime, monospace'
+                    }
+                  }}
+                />
                 <Routes>
                 {/* Admin Routes (no header/footer) */}
                 <Route path="/admin/login" element={
@@ -48,6 +61,11 @@ function App() {
                 <Route path="/admin/dashboard" element={
                   <Suspense fallback={<PageLoader />}>
                     <AdminDashboard />
+                  </Suspense>
+                } />
+                <Route path="/admin/emails/:key" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <EmailTemplateEditor />
                   </Suspense>
                 } />
                 
@@ -70,18 +88,6 @@ function App() {
                       </Suspense>
                     </main>
                     <Footer />
-                    <Toaster
-                      position="bottom-right"
-                      toastOptions={{
-                        duration: 3000,
-                        style: {
-                          background: 'hsl(var(--card))',
-                          color: 'hsl(var(--card-foreground))',
-                          border: '1px solid hsl(var(--border))',
-                          fontFamily: 'Courier Prime, monospace'
-                        }
-                      }}
-                    />
                   </div>
                 } />
               </Routes>

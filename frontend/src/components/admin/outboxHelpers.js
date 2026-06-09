@@ -6,6 +6,7 @@ export const STATUS_LABEL_PT = {
   sent: "Enviado",
   failed: "Falhou",
   cancelled: "Cancelado",
+  trashed: "Na lixeira",
 };
 
 // Tailwind colour classes per status — kept centralised so chips look the
@@ -16,6 +17,7 @@ export const STATUS_COLOR = {
   processing: "bg-sky-100 text-sky-700 border border-sky-200",
   failed: "bg-red-100 text-red-700 border border-red-200",
   cancelled: "bg-gray-200 text-gray-700 border border-gray-300",
+  trashed: "bg-zinc-200 text-zinc-700 border border-zinc-300",
 };
 
 export const STATUS_PILL_COLOR = {
@@ -23,6 +25,7 @@ export const STATUS_PILL_COLOR = {
   pending: "bg-amber-500 text-white",
   failed: "bg-red-600 text-white",
   cancelled: "bg-gray-600 text-white",
+  trashed: "bg-zinc-700 text-white",
 };
 
 export const KIND_LABEL_PT = {
