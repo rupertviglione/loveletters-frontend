@@ -1,18 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
+import Placeholder from "@tiptap/extension-placeholder";
 import {
   ArrowLeft,
   Save,
   Send,
   RotateCcw,
-  Eye,
   Loader,
-  Copy,
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
+  List as ListIcon,
+  ListOrdered,
+  Image as ImageIcon,
+  Link as LinkIcon,
   Code as CodeIcon,
-  FileText as FileTextIcon,
+  X as XIcon,
   AlertTriangle,
-  Info,
+  Plus,
 } from "lucide-react";
 import {
   adminGetEmailTemplate,
@@ -23,36 +32,30 @@ import {
   formatApiError,
 } from "@/services/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import RichTextEditor from "@/components/admin/RichTextEditor";
+import JinjaVariable from "@/components/admin/JinjaVariable";
+import JinjaBlock from "@/components/admin/JinjaBlock";
+import { friendlyName, htmlWithPills, cleanHtmlForSave } from "@/components/admin/jinjaVars";
 
-const formatDateTime = (iso) => {
-  if (!iso) return null;
-  try {
-    return new Date(iso).toLocaleString("pt-PT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return String(iso);
-  }
-};
+const IMG_WARN_BYTES = 200 * 1024;
+const IMG_HARD_LIMIT = 1024 * 1024;
+const PREVIEW_DEBOUNCE_MS = 500;
 
-const TabBtn = ({ active, onClick, icon, label, testId }) => (
+const ToolbarBtn = ({ active, onClick, title, testId, children, disabled }) => (
   <button
     type="button"
+    onMouseDown={(e) => e.preventDefault()}
     onClick={onClick}
-    className={`inline-flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-bold border-b-2 -mb-px transition-colors ${
-      active
-        ? "text-accent border-accent"
-        : "text-gray-500 border-transparent hover:text-gray-800"
-    }`}
+    disabled={disabled}
+    title={title}
+    aria-label={title}
     data-testid={testId}
+    className={`inline-flex items-center justify-center w-8 h-8 rounded transition-colors ${
+      active
+        ? "bg-[#7a2e2e] text-white"
+        : "text-gray-700 hover:bg-gray-100"
+    } disabled:opacity-40 disabled:cursor-not-allowed`}
   >
-    {icon}
-    {label}
+    {children}
   </button>
 );
 
@@ -63,77 +66,169 @@ const EmailTemplateEditor = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [busy, setBusy] = useState(null); // 'preview' | 'send-test' | 'reset'
+  const [busy, setBusy] = useState(null); // 'send-test' | 'reset'
   const [template, setTemplate] = useState(null);
 
   const [subject, setSubject] = useState("");
-  const [htmlBody, setHtmlBody] = useState("");
   const [textBody, setTextBody] = useState("");
-  const [editorTab, setEditorTab] = useState("html"); // 'subject' | 'html' | 'text'
-  const [sourceMode, setSourceMode] = useState(false);
-  const [previewTab, setPreviewTab] = useState("html"); // 'html' | 'text'
-  const [previewData, setPreviewData] = useState(null);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  // The raw HTML (canonical, with `{{ }}` / `{% %}`) — this is what we save.
+  const [htmlBody, setHtmlBody] = useState("");
+  // Holds preview output from /preview endpoint.
+  const [previewResult, setPreviewResult] = useState({
+    subject: "",
+    html_body: "",
+    text_body: "",
+  });
+  const [previewError, setPreviewError] = useState(null);
+  const [previewing, setPreviewing] = useState(false);
 
-  const editorRef = useRef(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const previewTimerRef = useRef(null);
+  // Snapshot of the originally-loaded values — used to compute the dirty flag.
+  const loadedRef = useRef({ subject: "", html_body: "", text_body: "" });
+
+  // Dirty = any field diverges from what was last loaded/saved.
+  const dirty =
+    subject !== loadedRef.current.subject ||
+    htmlBody !== loadedRef.current.html_body ||
+    textBody !== loadedRef.current.text_body;
 
   useEffect(() => {
-    if (!token) {
-      navigate("/admin/login");
-    }
+    if (!token) navigate("/admin/login");
   }, [token, navigate]);
 
+  // -------------------------------------------------------------------------
+  // Tiptap editor with custom Jinja nodes
+  // -------------------------------------------------------------------------
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        blockquote: false,
+        horizontalRule: false,
+        strike: false,
+        code: false,
+        link: false,
+      }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
+      }),
+      Image.configure({ inline: false, allowBase64: true }),
+      Placeholder.configure({
+        placeholder: "Escreve aqui o conteúdo do email…",
+      }),
+      JinjaVariable,
+      JinjaBlock,
+    ],
+    content: "",
+    editorProps: {
+      attributes: {
+        class: "email-editor-surface",
+        "data-testid": "email-editor-surface",
+      },
+      handleDrop: (view, event) => {
+        const files = event.dataTransfer?.files;
+        if (files && files.length && files[0].type.startsWith("image/")) {
+          event.preventDefault();
+          handleImageFile(files[0]);
+          return true;
+        }
+        return false;
+      },
+    },
+    onUpdate: ({ editor: e }) => {
+      const raw = cleanHtmlForSave(e.getHTML());
+      setHtmlBody(raw);
+    },
+  });
+
+  // -------------------------------------------------------------------------
+  // Initial load
+  // -------------------------------------------------------------------------
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await adminGetEmailTemplate(token, key);
       setTemplate(data);
-      setSubject(data?.subject || "");
-      setHtmlBody(data?.html_body || "");
-      setTextBody(data?.text_body || "");
-      setDirty(false);
-      // If the HTML contains Jinja2 control blocks ({% ... %}) or sits inside
-      // tables, default to Source mode — the WYSIWYG editor will otherwise
-      // mangle the control tags out of their parent containers and the
-      // backend will return 422 on save (unclosed for/if).
-      const html = data?.html_body || "";
-      const hasControlBlocks = /\{%\s*(?:if|for|elif|else|endif|endfor|block|set)\b/.test(
-        html,
-      );
-      const hasTables = /<\s*table\b/i.test(html);
-      if (hasControlBlocks || hasTables) {
-        setSourceMode(true);
+      const nextSubject = data?.subject || "";
+      const nextText = data?.text_body || "";
+      const nextHtml = data?.html_body || "";
+      setSubject(nextSubject);
+      setTextBody(nextText);
+      setHtmlBody(nextHtml);
+      loadedRef.current = {
+        subject: nextSubject,
+        html_body: nextHtml,
+        text_body: nextText,
+      };
+      if (editor) {
+        editor.commands.setContent(htmlWithPills(nextHtml), false);
       }
     } catch (err) {
       toast.error(formatApiError(err, "Erro a carregar template."));
     } finally {
       setLoading(false);
     }
-  }, [token, key]);
+  }, [token, key, editor]);
 
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, key]);
 
-  const markDirty = () => {
-    if (!dirty) setDirty(true);
-  };
+  // -------------------------------------------------------------------------
+  // Live preview (debounced)
+  // -------------------------------------------------------------------------
+  const refreshPreview = useCallback(async () => {
+    setPreviewing(true);
+    setPreviewError(null);
+    try {
+      const res = await adminPreviewEmailTemplate(token, key, {
+        subject,
+        html_body: htmlBody,
+        text_body: textBody,
+      });
+      setPreviewResult({
+        subject: res?.subject || "",
+        html_body: res?.html_body || "",
+        text_body: res?.text_body || "",
+      });
+    } catch (err) {
+      const apiDetail = err?.data?.detail;
+      setPreviewError(
+        (typeof apiDetail === "string" && apiDetail) ||
+          formatApiError(err, "Erro a renderizar pré-visualização."),
+      );
+    } finally {
+      setPreviewing(false);
+    }
+  }, [token, key, subject, htmlBody, textBody]);
 
-  const onSubjectChange = (v) => {
-    setSubject(v);
-    markDirty();
-  };
-  const onHtmlChange = (v) => {
-    setHtmlBody(v);
-    markDirty();
-  };
-  const onTextChange = (v) => {
-    setTextBody(v);
-    markDirty();
-  };
+  useEffect(() => {
+    if (!template) return undefined;
+    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = setTimeout(() => {
+      refreshPreview();
+    }, PREVIEW_DEBOUNCE_MS);
+    return () => {
+      if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+    };
+  }, [subject, htmlBody, textBody, template, refreshPreview]);
 
+  // -------------------------------------------------------------------------
+  // Actions
+  // -------------------------------------------------------------------------
   const handleSave = async () => {
+    if (previewError) {
+      toast.error("Corrige os erros indicados na pré-visualização antes de guardar.");
+      return;
+    }
     setSaving(true);
     try {
       const res = await adminSaveEmailTemplate(token, key, {
@@ -142,49 +237,35 @@ const EmailTemplateEditor = () => {
         text_body: textBody,
       });
       setTemplate((prev) => ({ ...(prev || {}), ...(res || {}), has_custom: true }));
-      setDirty(false);
-      toast.success("Template guardado.");
+      // Update the snapshot so the dirty indicator clears.
+      loadedRef.current = {
+        subject,
+        html_body: htmlBody,
+        text_body: textBody,
+      };
+      toast.success("Alterações guardadas.");
     } catch (err) {
-      // Backend returns 422 with detail string explaining Jinja2 error.
       const apiDetail = err?.data?.detail;
       const message =
         (typeof apiDetail === "string" && apiDetail) ||
-        formatApiError(err, "Erro ao guardar template (verifica a sintaxe Jinja2).");
+        formatApiError(err, "Erro ao guardar template.");
       toast.error(message, { duration: 8000 });
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePreview = async () => {
-    setBusy("preview");
-    try {
-      const res = await adminPreviewEmailTemplate(token, key, {
-        subject,
-        html_body: htmlBody,
-        text_body: textBody,
-      });
-      setPreviewData(res);
-      toast.success("Pré-visualização actualizada.");
-    } catch (err) {
-      toast.error(formatApiError(err, "Erro a gerar pré-visualização."));
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const handleSendTest = async () => {
     setBusy("send-test");
     try {
-      const res = await adminSendTestEmailTemplate(token, key, {
+      await adminSendTestEmailTemplate(token, key, {
         subject,
         html_body: htmlBody,
         text_body: textBody,
       });
       toast.success(
-        res?.outbox_id
-          ? `Email de teste em fila (${res.outbox_id}).`
-          : "Email de teste em fila.",
+        "Teste enviado para hello@weloveloveletters.com — verifica a tua caixa de entrada.",
+        { duration: 5000 },
       );
     } catch (err) {
       toast.error(formatApiError(err, "Erro a enviar email de teste."));
@@ -198,82 +279,126 @@ const EmailTemplateEditor = () => {
     setBusy("reset");
     try {
       await adminResetEmailTemplate(token, key);
-      toast.success("Template repôs o conteúdo padrão.");
+      toast.success("Texto original reposto.");
       await load();
     } catch (err) {
-      toast.error(formatApiError(err, "Erro ao repor default."));
+      toast.error(formatApiError(err, "Erro a repor texto original."));
     } finally {
       setBusy(null);
     }
   };
 
-  const insertPlaceholder = (placeholder) => {
-    if (editorTab === "subject") {
-      const el = document.querySelector('[data-testid="emails-editor-subject"]');
-      if (el && document.activeElement === el) {
-        const start = el.selectionStart ?? subject.length;
-        const end = el.selectionEnd ?? subject.length;
-        const next = subject.slice(0, start) + placeholder + subject.slice(end);
-        onSubjectChange(next);
-        requestAnimationFrame(() => {
-          el.focus();
-          const pos = start + placeholder.length;
-          el.setSelectionRange(pos, pos);
-        });
-      } else {
-        onSubjectChange((subject || "") + placeholder);
-      }
-    } else if (editorTab === "text") {
-      const el = document.querySelector('[data-testid="emails-editor-text"]');
-      if (el && document.activeElement === el) {
-        const start = el.selectionStart ?? textBody.length;
-        const end = el.selectionEnd ?? textBody.length;
-        const next = textBody.slice(0, start) + placeholder + textBody.slice(end);
-        onTextChange(next);
-        requestAnimationFrame(() => {
-          el.focus();
-          const pos = start + placeholder.length;
-          el.setSelectionRange(pos, pos);
-        });
-      } else {
-        onTextChange((textBody || "") + placeholder);
-      }
-    } else {
-      editorRef.current?.insertText(placeholder);
-      markDirty();
+  const handleSubjectChange = (e) => {
+    setSubject(e.target.value);
+  };
+
+  // -------------------------------------------------------------------------
+  // Toolbar handlers
+  // -------------------------------------------------------------------------
+  const onBold = () => editor?.chain().focus().toggleBold().run();
+  const onItalic = () => editor?.chain().focus().toggleItalic().run();
+  const onBullet = () => editor?.chain().focus().toggleBulletList().run();
+  const onOrdered = () => editor?.chain().focus().toggleOrderedList().run();
+
+  const onLink = () => {
+    if (!editor) return;
+    const prev = editor.getAttributes("link")?.href || "";
+    // eslint-disable-next-line no-alert
+    const url = window.prompt("URL do link:", prev);
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  };
+
+  const onImageClick = () => fileInputRef.current?.click();
+
+  const handleImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Apenas imagens são permitidas.");
+      return;
+    }
+    if (file.size > IMG_HARD_LIMIT) {
+      toast.error(`Imagem demasiado grande (${Math.round(file.size / 1024)} KB). Máximo 1 MB.`);
+      return;
+    }
+    if (file.size > IMG_WARN_BYTES) {
+      toast(
+        `Esta imagem é grande (${Math.round(file.size / 1024)} KB). Emails > 1MB podem ser truncados por alguns serviços. Considera reduzir o tamanho.`,
+        { icon: "⚠️", duration: 6000 },
+      );
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== "string") return;
+      editor?.chain().focus().setImage({ src: dataUrl }).run();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onImageFile = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    handleImageFile(file);
+  };
+
+  // -------------------------------------------------------------------------
+  // Insert variable pill from sidebar
+  // -------------------------------------------------------------------------
+  const insertVariable = (varName) => {
+    editor?.chain().focus().insertJinjaVariable(varName).run();
+  };
+
+  // -------------------------------------------------------------------------
+  // Code drawer — keep textareas in sync with WYSIWYG
+  // -------------------------------------------------------------------------
+  const onCodeHtmlChange = (e) => {
+    setHtmlBody(e.target.value);
+  };
+  const onCodeHtmlBlur = () => {
+    // When user closes/blurs the code editor, push the raw HTML back into Tiptap
+    // so the WYSIWYG re-renders the new pills/blocks.
+    if (editor) {
+      editor.commands.setContent(htmlWithPills(htmlBody), false);
     }
   };
 
-  const copyPlaceholder = async (placeholder) => {
-    try {
-      await navigator.clipboard.writeText(placeholder);
-      toast.success(`Copiado: ${placeholder}`);
-    } catch {
-      // fallback — just try to insert
-      insertPlaceholder(placeholder);
-    }
+  const onCodeTextChange = (e) => {
+    setTextBody(e.target.value);
   };
+
+  const closeCodeDrawer = () => {
+    onCodeHtmlBlur();
+    setCodeOpen(false);
+  };
+
+  const variables = useMemo(() => template?.variables || [], [template]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#faf7f2]">
+      {/* Header */}
+      <div className="bg-white border-b border-[#ece6dc]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 py-4">
             <button
               type="button"
               onClick={() => navigate("/admin/dashboard")}
-              className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-accent"
+              className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#7a2e2e]"
               data-testid="emails-editor-back"
             >
-              <ArrowLeft size={16} /> Voltar ao backoffice
+              <ArrowLeft size={16} /> Voltar
             </button>
             <span className="text-gray-300">/</span>
-            <h1 className="text-lg sm:text-xl font-syne font-bold truncate">
-              {template?.name || `Template: ${key}`}
+            <h1 className="text-base sm:text-lg font-syne font-bold truncate text-[#2b2b2b]">
+              {template?.name || "Template de email"}
             </h1>
             {template?.has_custom ? (
               <span
-                className="hidden sm:inline-block ml-2 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200"
+                className="hidden sm:inline-block ml-2 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-[#7a2e2e] text-white"
                 data-testid="emails-editor-status-custom"
               >
                 Personalizado
@@ -283,292 +408,284 @@ const EmailTemplateEditor = () => {
                 className="hidden sm:inline-block ml-2 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200"
                 data-testid="emails-editor-status-default"
               >
-                Default
+                Original
               </span>
             )}
-            <div className="ml-auto text-xs text-gray-500">
-              {template?.has_custom && template?.updated_at
-                ? `Editado em ${formatDateTime(template.updated_at)}`
-                : null}
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCodeOpen((s) => !s)}
+                className={`inline-flex items-center justify-center w-9 h-9 rounded border transition-colors ${
+                  codeOpen
+                    ? "bg-[#7a2e2e] text-white border-[#7a2e2e]"
+                    : "bg-white text-gray-500 border-gray-300 hover:text-[#7a2e2e]"
+                }`}
+                title="Editar código HTML (avançado)"
+                aria-label="Editar código HTML (avançado)"
+                data-testid="emails-editor-toggle-code"
+              >
+                <CodeIcon size={16} />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
           <div className="text-center py-16">
-            <Loader className="inline-block animate-spin text-accent" size={28} />
+            <Loader className="inline-block animate-spin text-[#7a2e2e]" size={28} />
             <p className="mt-4 text-gray-600">A carregar template…</p>
           </div>
         ) : template ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-            <div>
-              {template?.description && (
-                <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded bg-blue-50 border border-blue-200 text-blue-800 text-xs">
-                  <Info size={14} className="mt-0.5 shrink-0" />
-                  <span>{template.description}</span>
-                </div>
-              )}
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_480px] gap-6">
+            {/* ---------------- LEFT: editor + variables ---------------- */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-4">
+              <div>
+                {/* Subject */}
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={handleSubjectChange}
+                  placeholder="Assunto do email"
+                  className="w-full text-xl sm:text-2xl font-syne font-bold bg-transparent border-0 border-b border-[#ece6dc] focus:outline-none focus:border-[#7a2e2e] py-2 mb-3 placeholder:text-gray-400"
+                  data-testid="emails-editor-subject"
+                />
 
-              {/* Editor card */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="flex border-b border-gray-200 overflow-x-auto">
-                  <TabBtn
-                    active={editorTab === "subject"}
-                    onClick={() => setEditorTab("subject")}
-                    icon={<FileTextIcon size={14} />}
-                    label="Assunto"
-                    testId="emails-editor-tab-subject"
-                  />
-                  <TabBtn
-                    active={editorTab === "html"}
-                    onClick={() => setEditorTab("html")}
-                    icon={<CodeIcon size={14} />}
-                    label="HTML"
-                    testId="emails-editor-tab-html"
-                  />
-                  <TabBtn
-                    active={editorTab === "text"}
-                    onClick={() => setEditorTab("text")}
-                    icon={<FileTextIcon size={14} />}
-                    label="Texto simples"
-                    testId="emails-editor-tab-text"
-                  />
-                </div>
-                <div className="p-4">
-                  {editorTab === "subject" && (
-                    <div>
-                      <label className="block text-xs uppercase tracking-wider font-bold text-gray-600 mb-2">
-                        Assunto do email
-                      </label>
-                      <input
-                        type="text"
-                        value={subject}
-                        onChange={(e) => onSubjectChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-                        placeholder="Ex: Confirmação da encomenda {{ order_number }}"
-                        data-testid="emails-editor-subject"
-                      />
-                      <p className="text-[11px] text-gray-500 mt-2">
-                        Suporta Jinja2: <code>{"{{ order_number }}"}</code>,{" "}
-                        <code>{"{{ customer_name }}"}</code>, etc.
-                      </p>
-                    </div>
-                  )}
-                  {editorTab === "html" && (
-                    <>
-                      {sourceMode && (
-                        <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                          <span>
-                            <b>Modo Source (HTML).</b> Este template contém lógica Jinja2
-                            (<code>{"{% if %}"}</code>, <code>{"{% for %}"}</code>)
-                            ou tabelas que o editor visual estraga ao re-formatar. Edita o HTML
-                            directamente aqui — só sai do Source mode se removeres todos esses blocos.
-                          </span>
-                        </div>
-                      )}
-                      <RichTextEditor
-                        ref={editorRef}
-                        value={htmlBody}
-                        onChange={onHtmlChange}
-                        sourceMode={sourceMode}
-                        onToggleSource={() => setSourceMode((s) => !s)}
-                        onWarning={(msg) => toast(msg, { icon: "⚠️" })}
-                      />
-                    </>
-                  )}
-                  {editorTab === "text" && (
-                    <div>
-                      <label className="block text-xs uppercase tracking-wider font-bold text-gray-600 mb-2">
-                        Versão em texto simples (fallback)
-                      </label>
-                      <textarea
-                        value={textBody}
-                        onChange={(e) => onTextChange(e.target.value)}
-                        spellCheck
-                        rows={14}
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-                        placeholder="Versão texto-puro (usada por clientes que não renderizam HTML)."
-                        data-testid="emails-editor-text"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Preview card */}
-              <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="flex items-center border-b border-gray-200 px-3 py-2 gap-2 flex-wrap">
-                  <Eye size={14} className="text-gray-500" />
-                  <span className="text-xs uppercase tracking-wider font-bold text-gray-600">
-                    Pré-visualização
-                  </span>
-                  <div className="inline-flex border border-gray-200 rounded overflow-hidden ml-2">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewTab("html")}
-                      className={`px-2 py-1 text-[11px] uppercase ${
-                        previewTab === "html"
-                          ? "bg-accent text-white"
-                          : "bg-white text-gray-600"
-                      }`}
-                      data-testid="emails-preview-tab-html"
-                    >
-                      HTML
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewTab("text")}
-                      className={`px-2 py-1 text-[11px] uppercase border-l border-gray-200 ${
-                        previewTab === "text"
-                          ? "bg-accent text-white"
-                          : "bg-white text-gray-600"
-                      }`}
-                      data-testid="emails-preview-tab-text"
-                    >
-                      Texto
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handlePreview}
-                    disabled={busy === "preview"}
-                    className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-900 disabled:opacity-50"
-                    data-testid="emails-preview-refresh"
+                {/* Toolbar */}
+                <div className="flex items-center gap-1 bg-white border border-[#ece6dc] border-b-0 rounded-t-md px-2 py-1.5">
+                  <ToolbarBtn
+                    title="Negrito"
+                    testId="emails-toolbar-bold"
+                    active={editor?.isActive("bold")}
+                    onClick={onBold}
+                    disabled={!editor}
                   >
-                    {busy === "preview" ? (
-                      <Loader size={12} className="animate-spin" />
-                    ) : (
-                      <RotateCcw size={12} />
-                    )}{" "}
-                    Atualizar preview
-                  </button>
+                    <BoldIcon size={16} />
+                  </ToolbarBtn>
+                  <ToolbarBtn
+                    title="Itálico"
+                    testId="emails-toolbar-italic"
+                    active={editor?.isActive("italic")}
+                    onClick={onItalic}
+                    disabled={!editor}
+                  >
+                    <ItalicIcon size={16} />
+                  </ToolbarBtn>
+                  <span className="w-px h-5 bg-gray-200 mx-1" />
+                  <ToolbarBtn
+                    title="Lista"
+                    testId="emails-toolbar-bullet"
+                    active={editor?.isActive("bulletList")}
+                    onClick={onBullet}
+                    disabled={!editor}
+                  >
+                    <ListIcon size={16} />
+                  </ToolbarBtn>
+                  <ToolbarBtn
+                    title="Lista numerada"
+                    testId="emails-toolbar-ordered"
+                    active={editor?.isActive("orderedList")}
+                    onClick={onOrdered}
+                    disabled={!editor}
+                  >
+                    <ListOrdered size={16} />
+                  </ToolbarBtn>
+                  <span className="w-px h-5 bg-gray-200 mx-1" />
+                  <ToolbarBtn
+                    title="Inserir link"
+                    testId="emails-toolbar-link"
+                    active={editor?.isActive("link")}
+                    onClick={onLink}
+                    disabled={!editor}
+                  >
+                    <LinkIcon size={16} />
+                  </ToolbarBtn>
+                  <ToolbarBtn
+                    title="Inserir imagem"
+                    testId="emails-toolbar-image"
+                    onClick={onImageClick}
+                    disabled={!editor}
+                  >
+                    <ImageIcon size={16} />
+                  </ToolbarBtn>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={onImageFile}
+                    className="hidden"
+                  />
                 </div>
-                <div className="p-3">
-                  {previewData ? (
-                    <>
-                      <div className="mb-2 text-xs text-gray-600">
-                        <span className="font-bold">Assunto:</span>{" "}
-                        {previewData?.subject || "—"}
-                      </div>
-                      {previewTab === "html" ? (
-                        <iframe
-                          title="email-preview"
-                          sandbox=""
-                          srcDoc={previewData?.html_body || "<p>(vazio)</p>"}
-                          className="w-full min-h-[400px] border border-gray-200 rounded bg-white"
-                          data-testid="emails-preview-iframe"
-                        />
-                      ) : (
-                        <pre
-                          className="w-full min-h-[200px] p-3 border border-gray-200 rounded bg-gray-50 text-xs font-mono whitespace-pre-wrap text-gray-800"
-                          data-testid="emails-preview-text"
-                        >
-                          {previewData?.text_body || "(vazio)"}
-                        </pre>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic px-2 py-6 text-center">
-                      Clica em <b>Atualizar preview</b> para ver o resultado renderizado com dados de exemplo.
-                    </p>
-                  )}
+
+                {/* Editor surface */}
+                <div className="bg-white border border-[#ece6dc] rounded-b-md p-1">
+                  <EditorContent editor={editor} />
                 </div>
               </div>
 
-              <div className="mt-3 px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                <span>
-                  Imagens inline base64 podem aumentar o tamanho do email e
-                  alguns clientes (ex: Outlook Desktop) podem não as mostrar
-                  inline. Recomendamos imagens &lt; 200KB.
-                </span>
-              </div>
-            </div>
-
-            {/* Sidebar: placeholders */}
-            <aside className="lg:sticky lg:top-4 lg:self-start">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-3 py-2 border-b border-gray-200">
-                  <h3 className="text-xs uppercase tracking-wider font-bold text-gray-600">
-                    Placeholders disponíveis
+              {/* Variables sidebar */}
+              <aside className="lg:sticky lg:top-4 lg:self-start">
+                <div className="bg-white rounded-md border border-[#ece6dc] p-3">
+                  <h3 className="text-xs uppercase tracking-wider font-bold text-gray-700 mb-2 flex items-center gap-1">
+                    <Plus size={14} /> Variáveis
                   </h3>
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    Clica para inserir no cursor.
+                  <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
+                    Clica para inserir no cursor. São substituídas pelos valores reais quando o email é enviado.
                   </p>
-                </div>
-                <ul className="p-2 max-h-[500px] overflow-y-auto space-y-1">
-                  {(template?.variables || []).map((v) => {
-                    const ph = `{{ ${v} }}`;
-                    return (
-                      <li
-                        key={v}
-                        className="flex items-center justify-between gap-1 hover:bg-gray-50 rounded p-1.5"
-                      >
+                  <ul className="space-y-1.5">
+                    {variables.map((v) => (
+                      <li key={v}>
                         <button
                           type="button"
-                          onClick={() => insertPlaceholder(ph)}
-                          className="flex-1 text-left text-xs font-mono text-gray-800 truncate hover:text-accent"
-                          title={`Inserir ${ph}`}
-                          data-testid={`emails-placeholder-${v}`}
+                          onClick={() => insertVariable(v)}
+                          className="w-full text-left inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#e7efff] text-[#1d4ed8] border border-[#c7d7fa] text-xs font-semibold hover:bg-[#d8e4fd] transition-colors"
+                          data-testid={`emails-variable-${v}`}
                         >
-                          {ph}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => copyPlaceholder(ph)}
-                          className="p-1 text-gray-400 hover:text-gray-900"
-                          title="Copiar"
-                          aria-label="Copiar"
-                        >
-                          <Copy size={12} />
+                          <Plus size={11} />
+                          {friendlyName(v)}
                         </button>
                       </li>
-                    );
-                  })}
-                </ul>
-                <div className="border-t border-gray-100 px-3 py-2 text-[11px] text-gray-600 bg-gray-50">
-                  <p className="font-semibold mb-1">Jinja2:</p>
-                  <code className="block">{"{% for item in items %}"}</code>
-                  <code className="block">- {"{{ item.title }}"}</code>
-                  <code className="block">{"{% endfor %}"}</code>
+                    ))}
+                  </ul>
                 </div>
+              </aside>
+            </div>
+
+            {/* ---------------- RIGHT: live preview ---------------- */}
+            <div className="xl:sticky xl:top-4 xl:self-start">
+              <div className="text-xs uppercase tracking-wider font-bold text-gray-500 mb-2 flex items-center gap-2">
+                <span>Pré-visualização com dados de exemplo</span>
+                {previewing && (
+                  <Loader size={12} className="animate-spin text-gray-400" />
+                )}
               </div>
-            </aside>
+              {previewError ? (
+                <div
+                  className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 flex items-start gap-2"
+                  data-testid="emails-preview-error"
+                >
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold mb-1">Erro a renderizar</p>
+                    <p className="text-xs leading-relaxed break-words">{previewError}</p>
+                    <p className="text-[11px] mt-2 text-red-700">
+                      Corrige a variável errada e a pré-visualização actualiza automaticamente.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-md border border-[#ece6dc] bg-white overflow-hidden shadow-sm">
+                  <div className="bg-[#f4ecdf] border-b border-[#ece6dc] px-4 py-2 text-xs text-[#5b4b3b]">
+                    <div className="font-semibold truncate">
+                      Assunto: {previewResult.subject || "—"}
+                    </div>
+                    <div className="text-[11px] opacity-70">
+                      Para: cliente@exemplo.com · De: hello@weloveloveletters.com
+                    </div>
+                  </div>
+                  <iframe
+                    title="email-preview"
+                    sandbox=""
+                    srcDoc={previewResult.html_body || "<p style=\"padding:24px;color:#999;font-family:Georgia,serif;\">(vazio)</p>"}
+                    className="w-full bg-[#faf7f2]"
+                    style={{ minHeight: 600, border: 0 }}
+                    data-testid="emails-preview-iframe"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <p className="text-center text-gray-500 italic py-12">
             Template não encontrado.
           </p>
         )}
+      </div>
 
-        {/* Footer actions */}
-        {template && (
-          <div
-            className="sticky bottom-0 mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
-            data-testid="emails-editor-footer"
-          >
-            <div className="flex flex-wrap items-center gap-2 max-w-7xl mx-auto">
+      {/* ---------------- Code drawer (advanced) ---------------- */}
+      {codeOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-30 bg-white border-t-2 border-[#7a2e2e] shadow-2xl max-h-[60vh] overflow-hidden flex flex-col" data-testid="emails-editor-code-drawer">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-[#faf7f2]">
+            <CodeIcon size={16} className="text-[#7a2e2e]" />
+            <span className="text-sm font-bold font-syne text-[#2b2b2b]">Editar código HTML (avançado)</span>
+            <span className="text-xs text-gray-600 italic">
+              Esta zona é para utilizadores avançados. Se não tens a certeza do que estás a fazer, fecha-a e edita acima.
+            </span>
+            <button
+              type="button"
+              onClick={closeCodeDrawer}
+              className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded hover:bg-gray-200 text-gray-600"
+              aria-label="Fechar"
+              data-testid="emails-editor-code-close"
+            >
+              <XIcon size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-col min-h-0 border-r border-gray-200">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-gray-500 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                HTML
+              </div>
+              <textarea
+                value={htmlBody}
+                onChange={onCodeHtmlChange}
+                onBlur={onCodeHtmlBlur}
+                spellCheck={false}
+                className="flex-1 p-3 font-mono text-xs text-gray-800 focus:outline-none resize-none"
+                data-testid="emails-editor-code-html"
+              />
+            </div>
+            <div className="flex flex-col min-h-0">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-gray-500 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                Texto simples (fallback)
+              </div>
+              <textarea
+                value={textBody}
+                onChange={onCodeTextChange}
+                spellCheck
+                className="flex-1 p-3 font-mono text-xs text-gray-800 focus:outline-none resize-none"
+                data-testid="emails-editor-code-text"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- Footer ---------------- */}
+      {template && (
+        <div
+          className="sticky bottom-0 z-20 bg-white border-t border-[#ece6dc] shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
+          data-testid="emails-editor-footer"
+          style={codeOpen ? { display: "none" } : {}}
+        >
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3">
+            {template.has_custom && (
               <button
                 type="button"
-                onClick={handleSave}
-                disabled={saving || !dirty}
-                className="inline-flex items-center gap-1 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-red-700 disabled:opacity-50"
-                data-testid="emails-editor-save"
+                onClick={() => setConfirmReset(true)}
+                disabled={busy === "reset"}
+                className="text-xs text-gray-500 underline hover:text-[#7a2e2e] disabled:opacity-50"
+                data-testid="emails-editor-reset"
               >
-                {saving ? (
-                  <Loader size={14} className="animate-spin" />
-                ) : (
-                  <Save size={14} />
-                )}
-                Guardar
+                <RotateCcw size={12} className="inline-block mr-1" />
+                Repor texto original
               </button>
+            )}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {dirty && (
+                <span
+                  className="text-xs text-amber-700"
+                  data-testid="emails-editor-dirty"
+                >
+                  • Alterações por guardar
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleSendTest}
-                disabled={busy === "send-test"}
+                disabled={busy === "send-test" || saving}
                 className="inline-flex items-center gap-1 px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
                 data-testid="emails-editor-send-test"
               >
@@ -579,36 +696,31 @@ const EmailTemplateEditor = () => {
                 )}
                 Enviar teste para hello@…
               </button>
-              <span className="ml-auto" />
-              {template.has_custom && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmReset(true)}
-                  disabled={busy === "reset"}
-                  className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-red-300 text-red-700 rounded hover:bg-red-50 disabled:opacity-50"
-                  data-testid="emails-editor-reset"
-                >
-                  <RotateCcw size={14} /> Repor default
-                </button>
-              )}
-              {dirty && (
-                <span
-                  className="text-xs text-amber-700 self-center"
-                  data-testid="emails-editor-dirty"
-                >
-                  • Alterações por guardar
-                </span>
-              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || !dirty || !!previewError}
+                title={previewError ? "Corrige o erro de pré-visualização primeiro" : undefined}
+                className="inline-flex items-center gap-1 px-4 py-2 text-sm bg-[#7a2e2e] text-white rounded hover:bg-[#5e2222] disabled:opacity-50"
+                data-testid="emails-editor-save"
+              >
+                {saving ? (
+                  <Loader size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                Guardar alterações
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmReset}
-        title="Repor template padrão"
-        message="Vais descartar a versão personalizada deste template e voltar ao texto padrão da loja. Esta acção não pode ser desfeita."
-        confirmLabel="Repor default"
+        title="Repor texto original"
+        message="Tem a certeza? Vai apagar todas as alterações guardadas para este template e voltar ao texto original da loja."
+        confirmLabel="Repor original"
         destructive
         onConfirm={handleReset}
         onCancel={() => setConfirmReset(false)}

@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Pencil, RotateCcw, FileText, Loader } from "lucide-react";
-import { adminListEmailTemplates, formatApiError } from "@/services/api";
+import { RotateCcw, Loader, Mail, ArrowRight } from "lucide-react";
+import {
+  adminListEmailTemplates,
+  adminPreviewEmailTemplate,
+  formatApiError,
+} from "@/services/api";
 
 const formatDateTime = (iso) => {
   if (!iso) return null;
@@ -19,23 +23,19 @@ const formatDateTime = (iso) => {
   }
 };
 
-const Pill = ({ custom }) => (
-  <span
-    className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
-      custom
-        ? "bg-amber-100 text-amber-800 border border-amber-200"
-        : "bg-gray-100 text-gray-700 border border-gray-200"
-    }`}
-    data-testid={custom ? "email-template-pill-custom" : "email-template-pill-default"}
-  >
-    {custom ? "Personalizado" : "Default"}
-  </span>
-);
-
+/**
+ * EmailsTab — landing for the 3 email templates. Each card shows:
+ *  - friendly name + description
+ *  - "Personalizado" / "Original" pill
+ *  - live thumbnail of the rendered email (small iframe scaled with CSS)
+ *  - last edit timestamp if customised
+ */
 const EmailsTab = ({ token }) => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [thumbnails, setThumbnails] = useState({}); // key -> html
+  const [thumbErrors, setThumbErrors] = useState({}); // key -> bool
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -43,6 +43,19 @@ const EmailsTab = ({ token }) => {
       const data = await adminListEmailTemplates(token);
       const list = Array.isArray(data) ? data : data?.templates || [];
       setTemplates(list);
+      // Trigger thumbnail rendering for each (in parallel, non-blocking).
+      list.forEach(async (t) => {
+        try {
+          const res = await adminPreviewEmailTemplate(token, t.key, {
+            subject: t.subject,
+            html_body: t.html_body,
+            text_body: t.text_body,
+          });
+          setThumbnails((prev) => ({ ...prev, [t.key]: res?.html_body || "" }));
+        } catch {
+          setThumbErrors((prev) => ({ ...prev, [t.key]: true }));
+        }
+      });
     } catch (err) {
       toast.error(formatApiError(err, "Erro a carregar templates."));
     } finally {
@@ -56,12 +69,14 @@ const EmailsTab = ({ token }) => {
 
   return (
     <div data-testid="emails-tab">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between gap-3 mb-6 flex-wrap">
         <div>
-          <h2 className="text-xl font-syne font-bold">Emails automáticos</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Personaliza o conteúdo dos emails que a loja envia automaticamente.
-            Suporta variáveis Jinja2 (ex: <code className="text-xs">{"{{ order_number }}"}</code>).
+          <h2 className="text-xl font-syne font-bold text-[#2b2b2b]">
+            Emails automáticos
+          </h2>
+          <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+            Personaliza o texto e o aspecto dos emails que a loja envia
+            automaticamente aos clientes. Clica num cartão para editar.
           </p>
         </div>
         <button
@@ -75,66 +90,94 @@ const EmailsTab = ({ token }) => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <Loader className="inline-block animate-spin text-accent" size={24} />
+        <div className="text-center py-16">
+          <Loader className="inline-block animate-spin text-[#7a2e2e]" size={28} />
           <p className="mt-4 text-gray-600">A carregar templates…</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {templates.map((tpl) => (
-            <div
-              key={tpl.key}
-              className="border border-gray-200 rounded-lg p-5 bg-white hover:border-accent transition-colors flex flex-col"
-              data-testid={`email-template-card-${tpl.key}`}
-            >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="text-accent" size={18} />
-                  <h3 className="font-syne font-bold text-base">{tpl.name}</h3>
-                </div>
-                <Pill custom={tpl.has_custom} />
-              </div>
-              {tpl.description && (
-                <p className="text-sm text-gray-600 mb-3">{tpl.description}</p>
-              )}
-              <div className="text-xs text-gray-500 mb-3">
-                <span className="font-semibold uppercase tracking-wider">
-                  Assunto actual:
-                </span>{" "}
-                <span className="text-gray-800">{tpl.subject || "—"}</span>
-              </div>
-              <div className="flex flex-wrap gap-1 mb-3">
-                {(tpl.variables || []).slice(0, 6).map((v) => (
-                  <code
-                    key={v}
-                    className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 border border-gray-200"
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {templates.map((tpl) => {
+            const html = thumbnails[tpl.key];
+            const errored = thumbErrors[tpl.key];
+            return (
+              <button
+                type="button"
+                key={tpl.key}
+                onClick={() => navigate(`/admin/emails/${tpl.key}`)}
+                className="group text-left bg-white border border-[#ece6dc] rounded-lg overflow-hidden hover:border-[#7a2e2e] hover:shadow-md transition-all flex flex-col"
+                data-testid={`email-template-card-${tpl.key}`}
+              >
+                {/* Thumbnail */}
+                <div className="relative bg-[#faf7f2] border-b border-[#ece6dc] h-52 overflow-hidden">
+                  {errored ? (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400 italic">
+                      Pré-visualização indisponível
+                    </div>
+                  ) : html ? (
+                    <iframe
+                      title={`thumb-${tpl.key}`}
+                      sandbox=""
+                      srcDoc={html}
+                      style={{
+                        width: "200%",
+                        height: "200%",
+                        border: 0,
+                        transform: "scale(0.5)",
+                        transformOrigin: "top left",
+                        pointerEvents: "none",
+                      }}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader className="animate-spin text-gray-300" size={20} />
+                    </div>
+                  )}
+                  <span
+                    className={`absolute top-2 right-2 inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
+                      tpl.has_custom
+                        ? "bg-[#7a2e2e] text-white"
+                        : "bg-white text-gray-700 border border-gray-300"
+                    }`}
+                    data-testid={
+                      tpl.has_custom
+                        ? `email-template-pill-custom-${tpl.key}`
+                        : `email-template-pill-default-${tpl.key}`
+                    }
                   >
-                    {`{{ ${v} }}`}
-                  </code>
-                ))}
-                {(tpl.variables || []).length > 6 && (
-                  <span className="text-[10px] text-gray-500 self-center">
-                    +{(tpl.variables || []).length - 6} mais
+                    {tpl.has_custom ? "Personalizado" : "Original"}
                   </span>
-                )}
-              </div>
-              <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[11px] text-gray-500">
-                  {tpl.has_custom && tpl.updated_at
-                    ? `Editado em ${formatDateTime(tpl.updated_at)}`
-                    : "A usar versão padrão"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/admin/emails/${tpl.key}`)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-red-700"
-                  data-testid={`email-template-edit-${tpl.key}`}
-                >
-                  <Pencil size={12} /> Editar
-                </button>
-              </div>
-            </div>
-          ))}
+                </div>
+
+                {/* Body */}
+                <div className="p-4 flex-1 flex flex-col">
+                  <div className="flex items-start gap-2 mb-1">
+                    <Mail className="text-[#7a2e2e] mt-0.5 shrink-0" size={16} />
+                    <h3 className="font-syne font-bold text-base leading-tight">
+                      {tpl.name}
+                    </h3>
+                  </div>
+                  {tpl.description && (
+                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                      {tpl.description}
+                    </p>
+                  )}
+                  <div className="mt-auto pt-3 border-t border-[#ece6dc] flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-gray-500 truncate">
+                      {tpl.has_custom && tpl.updated_at
+                        ? `Editado em ${formatDateTime(tpl.updated_at)}`
+                        : "Texto original"}
+                    </span>
+                    <span className="text-[11px] font-semibold text-[#7a2e2e] inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                      Editar
+                      <ArrowRight size={12} />
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
           {templates.length === 0 && (
             <p className="text-gray-500 italic col-span-full">
               Sem templates disponíveis.
