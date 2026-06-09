@@ -93,6 +93,18 @@ const EmailTemplateEditor = () => {
       setHtmlBody(data?.html_body || "");
       setTextBody(data?.text_body || "");
       setDirty(false);
+      // If the HTML contains Jinja2 control blocks ({% ... %}) or sits inside
+      // tables, default to Source mode — the WYSIWYG editor will otherwise
+      // mangle the control tags out of their parent containers and the
+      // backend will return 422 on save (unclosed for/if).
+      const html = data?.html_body || "";
+      const hasControlBlocks = /\{%\s*(?:if|for|elif|else|endif|endfor|block|set)\b/.test(
+        html,
+      );
+      const hasTables = /<\s*table\b/i.test(html);
+      if (hasControlBlocks || hasTables) {
+        setSourceMode(true);
+      }
     } catch (err) {
       toast.error(formatApiError(err, "Erro a carregar template."));
     } finally {
@@ -133,7 +145,12 @@ const EmailTemplateEditor = () => {
       setDirty(false);
       toast.success("Template guardado.");
     } catch (err) {
-      toast.error(formatApiError(err, "Erro ao guardar template (verifica a sintaxe Jinja2)."));
+      // Backend returns 422 with detail string explaining Jinja2 error.
+      const apiDetail = err?.data?.detail;
+      const message =
+        (typeof apiDetail === "string" && apiDetail) ||
+        formatApiError(err, "Erro ao guardar template (verifica a sintaxe Jinja2).");
+      toast.error(message, { duration: 8000 });
     } finally {
       setSaving(false);
     }
@@ -340,14 +357,27 @@ const EmailTemplateEditor = () => {
                     </div>
                   )}
                   {editorTab === "html" && (
-                    <RichTextEditor
-                      ref={editorRef}
-                      value={htmlBody}
-                      onChange={onHtmlChange}
-                      sourceMode={sourceMode}
-                      onToggleSource={() => setSourceMode((s) => !s)}
-                      onWarning={(msg) => toast(msg, { icon: "⚠️" })}
-                    />
+                    <>
+                      {sourceMode && (
+                        <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                          <span>
+                            <b>Modo Source (HTML).</b> Este template contém lógica Jinja2
+                            (<code>{"{% if %}"}</code>, <code>{"{% for %}"}</code>)
+                            ou tabelas que o editor visual estraga ao re-formatar. Edita o HTML
+                            directamente aqui — só sai do Source mode se removeres todos esses blocos.
+                          </span>
+                        </div>
+                      )}
+                      <RichTextEditor
+                        ref={editorRef}
+                        value={htmlBody}
+                        onChange={onHtmlChange}
+                        sourceMode={sourceMode}
+                        onToggleSource={() => setSourceMode((s) => !s)}
+                        onWarning={(msg) => toast(msg, { icon: "⚠️" })}
+                      />
+                    </>
                   )}
                   {editorTab === "text" && (
                     <div>
