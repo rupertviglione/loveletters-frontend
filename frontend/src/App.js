@@ -9,6 +9,7 @@ import { SiteConfigProvider } from '@/contexts/SiteConfigContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FreeShippingBanner from '@/components/FreeShippingBanner';
+import CartAddToast from '@/components/CartAddToast';
 import Home from '@/pages/Home';
 import '@/App.css';
 
@@ -39,6 +40,7 @@ function App() {
             <SiteConfigProvider>
               <CartProvider>
                 <FreeShippingBanner />
+                <CartAddToast />
                 <Toaster
                   position="bottom-right"
                   toastOptions={{
@@ -82,6 +84,7 @@ function App() {
                           <Route path="/cart" element={<Cart />} />
                           <Route path="/checkout" element={<Checkout />} />
                           <Route path="/success" element={<Success />} />
+                          <Route path="/success/:orderNumber" element={<Success />} />
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/shipping-returns" element={<ShippingReturns />} />
                         </Routes>

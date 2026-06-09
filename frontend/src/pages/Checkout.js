@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createCheckoutSession, logApiError } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -111,6 +111,30 @@ const Checkout = () => {
   const totalWithShipping = subtotal + shippingCost;
   const isCheckoutBlocked = !shippingEstimate.supported;
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Bug fix: when the user goes to Stripe Checkout via window.location.href
+  // and comes back via the browser back-button, some browsers restore the
+  // page from bfcache with `loading=true` and `submittingRef=true` — leaving
+  // the Pay button visually stuck. Reset on `pageshow` with `event.persisted`.
+  // We also reset on the regular mount as a belt-and-braces measure.
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const reset = () => {
+      submittingRef.current = false;
+      setLoading(false);
+    };
+    const onPageShow = (event) => {
+      if (event.persisted) reset();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    // Hard reset on every mount too (covers the non-bfcache case where the
+    // user came back via "<-" and React rehydrated): submittingRef is already
+    // false on a fresh mount, but if the dev tools or a HMR reload kept state,
+    // make sure loading is false.
+    reset();
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   if (items.length === 0) {
     navigate("/cart");
     return null;
@@ -144,10 +168,18 @@ const Checkout = () => {
       }));
 
       const originUrl = window.location.origin;
+      // Always create a FRESH checkout session on each click — Stripe sessions
+      // are single-use, so we must never reuse a cached `checkout_url` from a
+      // previous attempt (e.g. when the user came back via the browser
+      // back-button from Stripe).
       const checkoutData = await createCheckoutSession({
         items: checkoutItems,
         customer_email: formData.email,
         customer_name: formData.name,
+        // Phone — top-level field (backend reads `phone` directly and
+        // normalises to E.164 before creating the Stripe Customer).
+        phone: formData.phone,
+        // Keep legacy aliases so older backend versions still work.
         customer_phone: formData.phone,
         shipping_country: formData.shipping_country,
         shippingCountry: formData.shipping_country,
@@ -157,6 +189,7 @@ const Checkout = () => {
           postal_code: formData.postal_code,
           city: formData.city,
           country: formData.shipping_country,
+          phone: formData.phone,
         },
         success_url: `${originUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${originUrl}/checkout`,

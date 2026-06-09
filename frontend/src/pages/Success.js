@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import {
   getCheckoutStatus,
   getOrderBySession,
@@ -31,10 +31,19 @@ const Success = () => {
   const { clearCart } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const params = useParams();
   const sessionId = searchParams.get("session_id");
+  // Set when the user landed on /success/:orderNumber directly (reload after
+  // we masked the URL). In that case we skip polling and just show the
+  // generic thank-you screen — the original session is long gone.
+  const routeOrderNumber = params.orderNumber || "";
 
-  const [status, setStatus] = useState("checking"); // checking | success | timeout | error
-  const [order, setOrder] = useState(null);
+  const [status, setStatus] = useState(
+    routeOrderNumber && !sessionId ? "success" : "checking",
+  ); // checking | success | timeout | error
+  const [order, setOrder] = useState(
+    routeOrderNumber && !sessionId ? { order_number: routeOrderNumber } : null,
+  );
   const [customerEmail, setCustomerEmail] = useState("");
   const [pollKey, setPollKey] = useState(0); // increment to restart polling
 
@@ -51,7 +60,11 @@ const Success = () => {
   }, []);
 
   useEffect(() => {
+    // If we landed here directly via /success/:orderNumber (URL was masked
+    // on the previous load and the user refreshed), skip the polling and
+    // just render the generic confirmation screen.
     if (!sessionId) {
+      if (routeOrderNumber) return undefined;
       navigate("/cart");
       return undefined;
     }
@@ -86,6 +99,17 @@ const Success = () => {
       if (!clearedRef.current) {
         clearCart();
         clearedRef.current = true;
+      }
+      // Mask the Stripe session_id from the URL bar — the user sees a clean
+      // /success/LL-20260609-XYZ. The matching React Router path is registered
+      // so reloads keep working (renders the generic thank-you).
+      const masked = finalOrder?.order_number || finalOrder?.id;
+      if (masked && window.location.search.includes("session_id=")) {
+        try {
+          window.history.replaceState({}, "", `/success/${masked}`);
+        } catch (e) {
+          /* ignore — non-blocking aesthetic improvement */
+        }
       }
     };
 
