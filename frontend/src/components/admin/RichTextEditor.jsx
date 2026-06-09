@@ -56,7 +56,12 @@ const RichTextEditor = React.forwardRef(function RichTextEditor(
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        // StarterKit includes Link by default; we disable it so we can register
+        // our own configured Link below (single registration, no duplicate name).
+        link: false,
+      }),
       Link.configure({
         openOnClick: false,
         autolink: true,

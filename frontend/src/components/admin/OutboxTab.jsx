@@ -25,6 +25,9 @@ import {
   adminBulkRestoreOutbox,
   adminBulkDeleteOutbox,
   adminEmptyOutboxTrash,
+  adminTrashOutbox,
+  adminRestoreOutbox,
+  adminDeleteOutbox,
   formatApiError,
 } from "@/services/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -243,14 +246,21 @@ const OutboxTab = ({ token }) => {
     try {
       let res;
       let verb = "";
+      const singleId = Array.isArray(ids) && ids.length === 1 ? ids[0] : null;
       if (op === "trash") {
-        res = await adminBulkTrashOutbox(token, ids);
+        res = singleId
+          ? await adminTrashOutbox(token, singleId)
+          : await adminBulkTrashOutbox(token, ids);
         verb = "movido(s) para a lixeira";
       } else if (op === "restore") {
-        res = await adminBulkRestoreOutbox(token, ids);
+        res = singleId
+          ? await adminRestoreOutbox(token, singleId)
+          : await adminBulkRestoreOutbox(token, ids);
         verb = "restaurado(s)";
       } else if (op === "delete") {
-        res = await adminBulkDeleteOutbox(token, ids);
+        res = singleId
+          ? await adminDeleteOutbox(token, singleId)
+          : await adminBulkDeleteOutbox(token, ids);
         verb = "eliminado(s) definitivamente";
       } else if (op === "empty") {
         res = await adminEmptyOutboxTrash(token);
@@ -261,7 +271,7 @@ const OutboxTab = ({ token }) => {
         res?.modified ??
         res?.deleted ??
         res?.count ??
-        ids?.length ??
+        (singleId ? 1 : ids?.length) ??
         0;
       toast.success(`${n} email(s) ${verb}.`);
       await fetchAll(true);
